@@ -1,0 +1,18 @@
+# Blob Detector Project Gitignore
+
+# Exclude all files, then include in only the required ones
+*
+
+# Allow for files nested within directories
+!*/
+
+# Allow for gitignore files
+!.gitignore
+
+# Allow for C/C++ and header files
+!*.c
+!*.cpp
+!*.h
+
+# Allow for Latex files
+!*.tex
