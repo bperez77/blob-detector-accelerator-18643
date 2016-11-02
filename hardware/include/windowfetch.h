@@ -26,9 +26,9 @@ struct window_pipeline {
     IN_T rowbuffer[KERNEL_HEIGHT][IMAGE_WIDTH];
     IN_T window[KERNEL_HEIGHT][KERNEL_WIDTH];
 
-    typedef void (*window_f)(void* window[KERNEL_HEIGHT][KERNEL_WIDTH]);
+    typedef OUT_T (*window_f)(IN_T window[KERNEL_HEIGHT][KERNEL_WIDTH]);
     const window_f window_function;
-    //rowbuffer idx 
+    //rowbuffer idx
     int head_row;
     int tail_row; //The row we store into 
     int tail_col; //The col we store into -- equal to head_col
@@ -38,7 +38,7 @@ struct window_pipeline {
     int tail_win;
 
     // Constructor
-    window_pipeline(window_f window_function) {
+    window_pipeline(window_f window_function) : window_function(window_function) {
         //initialize head and tail row
         head_row = 0;
         tail_row = 0;

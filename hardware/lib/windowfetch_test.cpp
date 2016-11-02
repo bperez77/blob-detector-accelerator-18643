@@ -41,8 +41,7 @@ int main() {
     //num_axis_t -> IN_T num_axis_t -> OUT_T
     //num_stream_t -> IN_STREAM_T num_stream_t-> OUT_STREAM_T
     //32 -> IMAGE_WIDTH 3-> KERNEL_HEIGHT 4-> KERNEL_WIDTH
-    //sum_window ->window_f 
-    window_pipeline<num_axis_t, num_axis_t, num_stream_t, num_stream_t, 32, 3, 4, sum_window> w;
+    window_pipeline<num_axis_t, num_axis_t, num_stream_t, num_stream_t, 32, 3, 4> w(sum_window);
 
     num_stream_t stream1;
     num_stream_t stream2;
