@@ -14,10 +14,13 @@
 
 #include "axis.h"               // Definition of the AXIS protocol structure
 
+typedef void (*window_f)(void* window[KERNEL_HEIGHT][KERNEL_WIDTH]);
+const window_f sum_window;
+
 //IN_STREAM_T should be a wrapper of IN_T 
 //OUT_STREAM_T should be a wrapper of OUT_T
 template <typename IN_T, typename OUT_T, typename IN_STREAM_T, typename OUT_STREAM_T, 
-          int IMAGE_WIDTH, int KERNEL_HEIGHT, int KERNEL_WIDTH, void (*f)(void*, void*, void*)> 
+          int IMAGE_WIDTH, int KERNEL_HEIGHT, int KERNEL_WIDTH, window_f window_function> 
 struct window_pipeline {
     
     IN_T rowbuffer[KERNEL_HEIGHT][IMAGE_WIDTH];
@@ -67,17 +70,15 @@ struct window_pipeline {
 
         //Output Processing
         if ((this.head_win - this.tail_win) % KERNEL_WIDTH == 1) {
-            out_pkt = (IN_T)(kernel_func((void*)&this.window));
+            out_pkt = (OUT_T)(&window_function((&this.window));
             out_stream << out_pkt;
         }
-        
-
-
 
         //update the head, tail position 
         this.update_tail();
         this.update_head();
-     }
+
+        }
      
 
 
@@ -100,8 +101,6 @@ struct window_pipeline {
 
      
 };
-
-
 
 
 
