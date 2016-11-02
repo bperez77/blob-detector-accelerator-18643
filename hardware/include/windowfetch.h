@@ -72,7 +72,7 @@ struct window_pipeline {
 
         //Output Processing
         if ((head_win - tail_win) % KERNEL_WIDTH == 1) {
-            out_pkt = (OUT_T)(&window_function((&window));
+            out_pkt = window_function(window);
             out_stream << out_pkt;
         }
 
