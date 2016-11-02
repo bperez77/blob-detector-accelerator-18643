@@ -17,6 +17,7 @@
 typedef axis<int, 32> num_axis_t;
 typedef hls::stream<num_axis_t> num_stream_t;
 
+
 //this is just a simple summing kernel
 void *sum_window(void* window[KERNEL_HEIGHT][KERNEL_WIDTH]){
     int sum, last;
