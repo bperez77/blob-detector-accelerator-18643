@@ -18,6 +18,10 @@
 !*.sh
 !*.py
 
+# Allow for Makefiles
+!Makefile
+!*.mk
+
 # Allow for Latex files
 !*.tex
 
