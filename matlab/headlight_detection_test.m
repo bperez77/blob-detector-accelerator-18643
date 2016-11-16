@@ -14,20 +14,21 @@
 
 function [] = headlight_detection_test()
     % Get the static configuration parameters for the script
-    [scale_factor, num_scales, response_threshold, blob_filter] = get_config();
+    [scale_factor, num_scales, monochrome_threshold, response_threshold, ...
+            blob_filter] = get_config();
 
     % Load a headlight image from file, and run blob detection on it
     test_image_file = 'headlight.jpg';
     headlight_image = im2double(imread(test_image_file));
     [bounding_boxes] = blob_detector(headlight_image, scale_factor, ...
-            num_scales, response_threshold, blob_filter);
+            num_scales, monochrome_threshold, response_threshold, blob_filter);
 
     % Display the image with the detections (bounding boxes) overlaid on it
     plot_overlaid_image(headlight_image, bounding_boxes, test_image_file);
 end
 
-function [scale_factor, num_scales, response_threshold, blob_filter] = ...
-        get_config()
+function [scale_factor, num_scales, monochrome_threshold, ...
+        response_threshold, blob_filter] = get_config()
     % The amount by which to scale down the image at each level. This is the
     % factor to reduce each dimension by (e.g. width / scale_factor)
     scale_factor = 4 / 3;
@@ -35,6 +36,10 @@ function [scale_factor, num_scales, response_threshold, blob_filter] = ...
     % The number of scale levels, including the original scale. The image will
     % be scaled down num_scales - 1 times.
     num_scales = 5;
+
+    % The threshold to determine to convert an image to monochrome (bw) image.
+    max_grayscale = 255;
+    monochrome_threshold = 217 / max_grayscale;
 
     % The threshold to determine if a LoG filter response value corresponds to
     % the center of a headlight blob.

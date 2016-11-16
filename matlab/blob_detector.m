@@ -20,7 +20,7 @@
 % returned (each column is the 4 coordinate values).
 
 function [bounding_boxes] = blob_detector(image, scale_factor, num_scales, ...
-        response_threshold, blob_filter)
+        monochrome_threshold, response_threshold, blob_filter)
     % Convert the image to a grayscale
     gray_image = rgb2gray(image);
 
@@ -34,8 +34,12 @@ function [bounding_boxes] = blob_detector(image, scale_factor, num_scales, ...
         downscale = (1 / scale_factor) .^ scale_level;
         resized_image = imresize(gray_image, downscale, 'method', 'bicubic');
 
+        % Convert the image to binary monochrome (black and white) image
+        monochrome_image = im2bw(resized_image, monochrome_threshold);
+        monochrome_image = im2double(monochrome_image);
+
         % Perform blob detection on the downscaled image
-        [detections] = detect_blobs(resized_image, response_threshold, ...
+        [detections] = detect_blobs(monochrome_image, response_threshold, ...
                 blob_filter);
 
         % Transform the box coordinates back to the original scale space
