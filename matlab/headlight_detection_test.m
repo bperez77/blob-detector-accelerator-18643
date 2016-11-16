@@ -69,10 +69,12 @@ function [] = plot_overlaid_image(image, bounding_boxes, filename)
         overlaid_image = image;
     end
 
-    % Setup the plot
+    % Setup the plot, making sure that underscores aren't treated as special
     figure();
     hold on;
-    title(sprintf('Image %s with Headlight Detections Overlaid', filename));
+    fig_title = title(sprintf('Image %s with Detections Overlaid', ...
+            filename));
+    set(fig_title, 'Interpreter', 'none');
 
     % Plot the image with the detections overlaid on it
     imshow(overlaid_image);
