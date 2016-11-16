@@ -54,7 +54,7 @@ function [bounding_boxes] = detect_blobs(image, response_threshold, blob_filter)
     blob_responses(blob_responses < response_threshold) = 0;
 
     % Get the centerpoints of the blobs in the image, and compute the radius
-    [center_xs, center_ys] = find(blob_responses > 0);
+    [center_ys, center_xs] = find(blob_responses > 0);
     center_points = [center_xs'; center_ys'];
     box_radius = ceil(size(blob_filter) / 2)';
 
