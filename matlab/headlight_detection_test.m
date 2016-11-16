@@ -18,7 +18,7 @@ function [] = headlight_detection_test()
             blob_filter] = get_config();
 
     % Load a headlight image from file, and run blob detection on it
-    test_image_file = 'headlight.jpg';
+    test_image_file = 'headlight_images/headlight1.jpg';
     headlight_image = im2double(imread(test_image_file));
     [bounding_boxes] = blob_detector(headlight_image, scale_factor, ...
             num_scales, monochrome_threshold, response_threshold, blob_filter);
@@ -31,7 +31,7 @@ function [scale_factor, num_scales, monochrome_threshold, ...
         response_threshold, blob_filter] = get_config()
     % The amount by which to scale down the image at each level. This is the
     % factor to reduce each dimension by (e.g. width / scale_factor)
-    scale_factor = 4 / 3;
+    scale_factor = 2;
 
     % The number of scale levels, including the original scale. The image will
     % be scaled down num_scales - 1 times.
@@ -44,7 +44,7 @@ function [scale_factor, num_scales, monochrome_threshold, ...
     % The threshold to determine if a LoG filter response value corresponds to
     % the center of a headlight blob.
     max_grayscale = 255;
-    response_threshold = 75 / max_grayscale;
+    response_threshold = 125 / max_grayscale;
 
     % The filter used to detect car headlight-like blobs. This is a 5x5
     % inverted Laplacian of Gaussian filter (LoG) with an sigma value of 1
