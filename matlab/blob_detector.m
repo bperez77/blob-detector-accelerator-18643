@@ -29,7 +29,6 @@ function [bounding_boxes] = blob_detector(image, scale_factor, num_scales, ...
             blob_filter);
 
     % Iterate over each scale level, and perform blob detection at each scale
-    bounding_boxes = [];
     for scale_level = 1:num_scales-1
         % Scale the image down using bicubic interpolation
         downscale = (1 / scale_factor) .^ scale_level;

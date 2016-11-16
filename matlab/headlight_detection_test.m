@@ -39,7 +39,7 @@ function [scale_factor, num_scales, response_threshold, blob_filter] = ...
     % The threshold to determine if a LoG filter response value corresponds to
     % the center of a headlight blob.
     max_grayscale = 255;
-    response_threshold = 50 / max_grayscale;
+    response_threshold = 75 / max_grayscale;
 
     % The filter used to detect car headlight-like blobs. This is a 5x5
     % inverted Laplacian of Gaussian filter (LoG) with an sigma value of 1
