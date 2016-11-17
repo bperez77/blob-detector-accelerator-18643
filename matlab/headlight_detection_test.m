@@ -17,11 +17,18 @@ function [] = headlight_detection_test()
     [scale_factor, num_scales, monochrome_threshold, response_threshold, ...
             blob_filter] = get_config();
 
-    % Load a headlight image from file, and run blob detection on it
+    % Load a headlight image from file, and run blob detection on it. Time the
+    % total time that blob detection takes to execute.
     test_image_file = 'headlight_images/headlight1.jpg';
     headlight_image = im2double(imread(test_image_file));
+    start_time = tic;
     [bounding_boxes] = blob_detector(headlight_image, scale_factor, ...
             num_scales, monochrome_threshold, response_threshold, blob_filter);
+    exec_time = toc(start_time);
+
+    % Report the time the detection took to the user
+    display(sprintf('Time to process "%s": %0.3f s', test_image_file, ...
+            exec_time));
 
     % Display the image with the detections (bounding boxes) overlaid on it
     plot_overlaid_image(headlight_image, bounding_boxes, test_image_file);
