@@ -28,7 +28,7 @@
  * Converts the image pixel to grayscale, simply taking the average of its 3
  * grayscale channels.
  **/
-static grayscale_t compute_grayscale(const pixel_t& pixel) {
+grayscale_t compute_grayscale(const pixel_t& pixel) {
 #pragma HLS INLINE
 
     // Convert the RGB channels to 10-bit values to prevent overflow
@@ -47,7 +47,6 @@ static grayscale_t compute_grayscale(const pixel_t& pixel) {
 void grayscale(pixel_stream_t& pixel_stream,
 		grayscale_stream_t& grayscale_stream) {
 #pragma HLS INLINE
-#pragma HLS PIPELINE rewind
 
     // Read in the next image pixel packet
     pixel_axis_t pixel_axis_pkt;
@@ -75,10 +74,12 @@ void grayscale(pixel_stream_t& pixel_stream,
  * The top-level function for the grayscale module. This is what gets exported
  * as the IP. Converts the input RGBA image stream to a grayscale stream.
  **/
-static void grayscale_top(pixel_stream_t& pixel_stream,
+void grayscale_top(pixel_stream_t& pixel_stream,
         grayscale_stream_t& grayscale_stream) {
 #pragma HLS INTERFACE axis port=pixel_stream
 #pragma HLS INTERFACE axis port=grayscale_stream
+
+#pragma HLS PIPELINE II=1 rewind
 
     // Instantiate the grayscale module
     grayscale(pixel_stream, grayscale_stream);
