@@ -5,30 +5,49 @@
  * @author Devon White (dww)
  * @author Yiyi Zhang (yiyiz)
  *
+ * This file contains the implementation of the grayscale module.
+ *
+ * The grayscale module simply takes a 32-bit input stream, consisting of four
+ * channels, red, green, blue, and alpha, and converts it to a 8-bit intensity,
+ * or grayscale value.
+ *
  * @bug No known bugs.
  **/
 
-#include <ap_int.h>         // Arbitrary precision integers type and functions
+#include <hls_stream.h>     // Definition of the hls::stream class
+#include <ap_int.h>         // Arbitrary precision integer types
 
-#include "grayscale.h"      // Grayscale interface and definitions
+#include "axis.h"           // Definition of the AXIS protocol structure
+#include "grayscale.h"      // Our interface
+
+/*----------------------------------------------------------------------------
+ * Grayscale Module
+ *----------------------------------------------------------------------------*/
 
 /**
  * Converts the image pixel to grayscale, simply taking the average of its 3
  * grayscale channels.
  **/
-static grayscale_t compute_grayscale(const pixel_t& pixel)
-{
-    return (pixel.red + pixel.blue + pixel.green) / 3;
+static grayscale_t compute_grayscale(const pixel_t& pixel) {
+#pragma HLS INLINE
+
+    // Convert the RGB channels to 10-bit values to prevent overflow
+    ap_int<COLOR_DEPTH+2> red = pixel.red;
+    ap_int<COLOR_DEPTH+2> blue = pixel.blue;
+    ap_int<COLOR_DEPTH+2> green = pixel.green;
+
+    return (red + blue + green) / 3;
 }
 
 /**
  * The main grayscale function for the module. This is what gets invoked by the
- * testbench, and would be templated on the image size if necessary. Converts
- * the input RGBA image stream to a grayscale stream.
+ * testbench, and what other functions would invoke to instatiate the module.
+ * Converts the input RGBA image stream to a grayscale stream.
  **/
 void grayscale(pixel_stream_t& pixel_stream,
 		grayscale_stream_t& grayscale_stream) {
-#pragma HLS PIPELINE
+#pragma HLS INLINE
+#pragma HLS PIPELINE rewind
 
     // Read in the next image pixel packet
     pixel_axis_t pixel_axis_pkt;
@@ -48,11 +67,15 @@ void grayscale(pixel_stream_t& pixel_stream,
     return;
 }
 
+/*----------------------------------------------------------------------------
+ * Top Function for Synthesis
+ *----------------------------------------------------------------------------*/
+
 /**
  * The top-level function for the grayscale module. This is what gets exported
  * as the IP. Converts the input RGBA image stream to a grayscale stream.
  **/
-void grayscale_top(pixel_stream_t& pixel_stream,
+static void grayscale_top(pixel_stream_t& pixel_stream,
         grayscale_stream_t& grayscale_stream) {
 #pragma HLS INTERFACE axis port=pixel_stream
 #pragma HLS INTERFACE axis port=grayscale_stream
