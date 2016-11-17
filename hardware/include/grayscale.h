@@ -5,6 +5,12 @@
  * @author Devon White (dww)
  * @author Yiyi Zhang (yiyiz)
  *
+ * This file contains the interface to the grayscale module.
+ *
+ * This defines the grayscale module interface, as both a streaming sequential
+ * interface, and a combinational interface. It also defines the input stream,
+ * and output data types for the module.
+ *
  * @bug No known bugs.
  **/
 
@@ -14,35 +20,19 @@
 #include <hls_stream.h>             // Definition of the hls::stream class
 #include <ap_int.h>                 // Arbitrary precision integer types
 
+#include "image.h"                  // Definition of the image format
 #include "axis.h"                   // Definition of the AXIS protocol structure
 
 /*----------------------------------------------------------------------------
  * Defintions
  *----------------------------------------------------------------------------*/
 
-// The number of rows and columns in the images being processed
-// TODO: Eventually move into a different header file
-const int IMAGE_ROWS = 1080;
-const int IMAGE_COLS = 1920;
-
-/* The number of bits needed to represent a color channel, and the total number
- * of bits needed to represent a pixel, as four color channels. */
-const int COLOR_DEPTH = 8;
-const int PIXEL_BITS = 4 * COLOR_DEPTH;
-
-// Represents a pixel in an image, as its RGBA components
-typedef struct pixel {
-    ap_uint<COLOR_DEPTH> red;       // Red channel of the pixel
-    ap_uint<COLOR_DEPTH> blue;      // Blue channel of the pixel
-    ap_uint<COLOR_DEPTH> green;     // Green channel of the pixel
-    ap_uint<COLOR_DEPTH> alpha;     // Alpha channel of the pixel
-} pixel_t;
-
+// The input stream type, an RGB AXIS packet
 // The RGB AXIS packet, and its stream variant
 typedef axis<pixel_t, PIXEL_BITS> pixel_axis_t;
 typedef hls::stream<pixel_axis_t> pixel_stream_t;
 
-// The grayscale AXIS packet, and its stream variant
+// The output stream type, an 8-bit grayscale value AXIS packet
 typedef ap_uint<COLOR_DEPTH> grayscale_t;
 typedef axis<grayscale_t, COLOR_DEPTH> grayscale_axis_t;
 typedef hls::stream<grayscale_axis_t> grayscale_stream_t;
