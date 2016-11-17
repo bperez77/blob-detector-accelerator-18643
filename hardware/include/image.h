@@ -14,37 +14,67 @@
 #ifndef IMAGE_H_
 #define IMAGE_H_
 
-#include <ap_int.h>                 // Arbitrary precision integer types
+#include <ap_int.h>                         // Arbitrary precision integer types
 
 /*----------------------------------------------------------------------------
- * Parameters
+ * Image Format Parameters
  *----------------------------------------------------------------------------*/
 
 // The number of rows and columns in the image being processed (1080p)
-const int IMAGE_WIDTH               = 1920;
-const int IMAGE_HEIGHT              = 1080;
+const int IMAGE_WIDTH                       = 1920;
+const int IMAGE_HEIGHT                      = 1080;
 
 // The number of bits needed to represent a color channel
-const int COLOR_DEPTH = 8;
+const int COLOR_DEPTH                       = 8;
+
+// The number of bits needed to represent a pixel, as four color channels
+const int NUM_COLOR_CHANNELS                = 4;
+const int PIXEL_BITS                        = 4 * COLOR_DEPTH;
 
 /*----------------------------------------------------------------------------
  * Image Format (Pixel) Definition
  *----------------------------------------------------------------------------*/
 
-// The number of bits needed to represent a pixel, as four color channels
-const int NUM_COLOR_CHANNELS        = 4;
-const int PIXEL_BITS                = 4 * COLOR_DEPTH;
-
 /**
- * The format of a pixel in an image, which consists of four color channels:
- * red, green, blue, and alpha. The total size is 32-bits, with alpha being the
- * most-signficiant byte, and red being the least significant byte.
+ * Template for a generic structure representing a pixel in an image, consisting
+ * of four color channels of a specified depth (number of bits).
+ *
+ * This structure defines a type `color_t` that represents a color channel. The
+ * alpha channel is the most significant byte, while the red channel is the
+ * least significant byte.
+ *
+ * @tparam COLOR_DEPTH The number of bits needed to represent a color channel.
  **/
-typedef struct pixel {
-    ap_uint<COLOR_DEPTH> red;       // Red channel of the pixel
-    ap_uint<COLOR_DEPTH> blue;      // Blue channel of the pixel
-    ap_uint<COLOR_DEPTH> green;     // Green channel of the pixel
-    ap_uint<COLOR_DEPTH> alpha;     // Alpha channel of the pixel
-} pixel_t;
+template <int COLOR_DEPTH>
+struct pixel {
+    typedef ap_uint<COLOR_DEPTH> color_t;   // Definition of a color channel
+
+    color_t red;                            // Red channel of the pixel
+    color_t blue;                           // Blue channel of the pixel
+    color_t green;                          // Green channel of the pixel
+    color_t alpha;                          // Alpha channel of the pixel
+
+    // Default constructor for the pixel
+    pixel() {}
+
+    // Constructor for the pixel from constant integer values
+    pixel(int red, int green, int blue, int alpha) {
+        this->red = red;
+        this->green = green;
+        this->blue = blue;
+        this->alpha = alpha;
+    }
+
+    // Constructor for the pixel from color_t (ap_uint) values
+    pixel(color_t red, color_t green, color_t blue, color_t alpha) {
+        this->red = red;
+        this->green = green;
+        this->blue = blue;
+        this->alpha = alpha;
+    }
+};
+
+// Type defintion for the format (pixel) of the image
+typedef pixel<COLOR_DEPTH> pixel_t;
 
 #endif /* IMAGE_H_ */
