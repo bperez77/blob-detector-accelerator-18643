@@ -25,8 +25,10 @@
  * Definitions
  *----------------------------------------------------------------------------*/
 
-/* The input stream type is a grayscale AXIS packet. The output stream type is a
- * 1-bit binary monochrome value AXIS packet. */
+/**
+ * The input stream type is a grayscale AXIS packet. The output stream type is a
+ * 1-bit monochrome value AXIS packet.
+ ***/
 typedef ap_uint<1> monochrome_t;
 typedef axis<monochrome_t, 1> monochrome_axis_t;
 typedef hls::stream<monochrome_axis_t> monochrome_stream_t;
@@ -37,8 +39,9 @@ typedef hls::stream<monochrome_axis_t> monochrome_stream_t;
 
 /**
  * Converts the grayscale value into a binary monochrome value, simply
- * thresholding on the grayscale value. This is the combinational interface to
- * the module.
+ * thresholding on the grayscale value.
+ *
+ * This is the combinational interface to the module.
  *
  * @param[in] grayscale The grayscale value to convert to monochrome.
  * @return The 1-bit monochrome value of the grayscale value.
@@ -48,7 +51,9 @@ monochrome_t compute_monochrome(const grayscale_t& grayscale);
 /**
  * Converts the grayscale input stream into an output monochrome stream, by
  * thresholding the grayscale values to convert them to a binary monochrome
- * value. This is the sequential interface to the module.
+ * value.
+ *
+ * This is the sequential interface to the module.
  *
  * @param[in] grayscale_stream The input stream of grayscale values.
  * @param[out] monochrome_stream The output stream of monochrome values.

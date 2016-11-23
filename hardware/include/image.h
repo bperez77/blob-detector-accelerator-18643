@@ -21,15 +21,24 @@
  *----------------------------------------------------------------------------*/
 
 // The number of rows and columns in the image being processed (1080p)
-const int IMAGE_WIDTH                       = 1920;
-const int IMAGE_HEIGHT                      = 1080;
 
-// The number of bits needed to represent a color channel
-const int COLOR_DEPTH                       = 8;
+/**
+ * The dimensions of the image being processed, which is a 1080p image.
+ **/
+static const int IMAGE_WIDTH                = 1920;
+static const int IMAGE_HEIGHT               = 1080;
 
-// The number of bits needed to represent a pixel, as four color channels
-const int NUM_COLOR_CHANNELS                = 4;
-const int PIXEL_BITS                        = 4 * COLOR_DEPTH;
+/**
+ * The number of bits needed to represent a color channel in the image.
+ **/
+static const int COLOR_DEPTH                = 8;
+
+/**
+ * The number of bits needed to represent a pixel, which consists of four color
+ * channels (RGBA)
+ **/
+static const int NUM_COLOR_CHANNELS         = 4;
+static const int PIXEL_BITS                 = 4 * COLOR_DEPTH;
 
 /*----------------------------------------------------------------------------
  * Image Format (Pixel) Definition
@@ -74,7 +83,10 @@ struct pixel {
     }
 };
 
-// Type defintion for the format (pixel) of the image
+/**
+ * The definition for the format (pixel) of the image, which is a 32-bit word,
+ * consisting of 8-bit RGBA color channels.
+ **/
 typedef pixel<COLOR_DEPTH> pixel_t;
 
 #endif /* IMAGE_H_ */

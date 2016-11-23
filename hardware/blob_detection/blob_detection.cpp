@@ -94,9 +94,10 @@ void blob_detection(monochrome_stream_t& monochrome_stream,
  *----------------------------------------------------------------------------*/
 
 /**
- * The top function for the blob detector when it is synthesized by itself.
+ * The top function for the blob detection module when it is synthesized by
+ * itself.
  *
- * This is the function that HLS will look for if the blob detector is
+ * This is the function that HLS will look for if the blob detection module is
  * synthesized into its own IP block.
  **/
 void blob_detection_top(monochrome_stream_t& monochrome_stream,

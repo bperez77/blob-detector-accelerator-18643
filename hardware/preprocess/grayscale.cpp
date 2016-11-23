@@ -25,7 +25,9 @@
 
 /**
  * Converts the image pixel to grayscale, simply taking the average of its 3
- * grayscale channels. This is the combinational interface.
+ * grayscale channels.
+ *
+ * This is the combinational interface to the module.
  **/
 grayscale_t compute_grayscale(const pixel_t& pixel) {
 #pragma HLS INLINE
@@ -40,7 +42,8 @@ grayscale_t compute_grayscale(const pixel_t& pixel) {
 
 /**
  * Converts the stream of pixels into grayscale, using the grayscale function.
- * This is the sequential interface for the module.
+ *
+ * This is the sequential interface to the module.
  **/
 void grayscale(pixel_stream_t& pixel_stream,
 		grayscale_stream_t& grayscale_stream) {
@@ -69,8 +72,10 @@ void grayscale(pixel_stream_t& pixel_stream,
  *----------------------------------------------------------------------------*/
 
 /**
- * The top-level function for the grayscale module. This is what gets exported
- * as the IP. Converts the input RGBA image stream to a grayscale stream.
+ * The top function for the grayscale module when it is synthesized by itself.
+ *
+ * This is the function that HLS will look for if the blob detection module is
+ * synthesized into its own IP block.
  **/
 void grayscale_top(pixel_stream_t& pixel_stream,
         grayscale_stream_t& grayscale_stream) {

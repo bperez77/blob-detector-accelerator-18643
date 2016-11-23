@@ -29,9 +29,9 @@ const grayscale_t MONOCHROME_THRESHOLD = 0.85 * 255;
  *----------------------------------------------------------------------------*/
 
 /**
- * Converts the grayscale into a binary monochrome value. This is the
- * combinational interface to the module.
+ * Converts the grayscale into a binary monochrome value.
  *
+ * This is the combinational interface to the module.
  **/
 monochrome_t compute_monochrome(const grayscale_t& grayscale)
 {
@@ -39,8 +39,9 @@ monochrome_t compute_monochrome(const grayscale_t& grayscale)
 }
 
 /**
- * Converts the stream of grayscale values into monochrome, using the monochrome
- * function. This is the sequential interface to the module.
+ * Converts the stream of grayscale values into a monochrome stream.
+ *
+ * This is the sequential interface to the module.
  **/
 void monochrome(grayscale_stream_t& grayscale_stream,
         monochrome_stream_t& monochrome_stream) {
@@ -69,6 +70,12 @@ void monochrome(grayscale_stream_t& grayscale_stream,
  * Top Function for Synthesis
  *----------------------------------------------------------------------------*/
 
+/**
+ * The top function for the monochrome module when it is synthesized by itself.
+ *
+ * This is the function that HLS will look for if the blob detector is
+ * synthesized into its own IP block.
+ **/
 void monochrome_top(grayscale_stream_t& grayscale_stream,
         monochrome_stream_t& monochrome_stream) {
 #pragma HLS INTERFACE axis port=grayscale_stream

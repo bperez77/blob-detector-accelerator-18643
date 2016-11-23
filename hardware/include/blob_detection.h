@@ -41,8 +41,8 @@ static const int BLOB_FILTER_HEIGHT = BLOB_FILTER_WIDTH;
 typedef monochrome_t monochrome_window_t[BLOB_FILTER_HEIGHT][BLOB_FILTER_WIDTH];
 
 /**
- * The input stream type is a monochrome axis packet. The output stream type is
- * a 1-bit boolean value axis packet. This boolean indicates if the pixel
+ * The input stream type is a monochrome AXIS packet. The output stream type is
+ * a 1-bit boolean value AXIS packet. This boolean indicates if the pixel
  * corresponds to the centerpoint of a blob detection.
  **/
 typedef ap_uint<1> blob_detection_t;

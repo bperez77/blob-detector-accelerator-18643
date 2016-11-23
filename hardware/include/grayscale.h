@@ -27,11 +27,15 @@
  * Defintions
  *----------------------------------------------------------------------------*/
 
-// The input stream type, an RGB AXIS packet
+/**
+ * The input stream type, an RGBA pixel AXIS packet.
+ **/
 typedef axis<pixel_t, PIXEL_BITS> pixel_axis_t;
 typedef hls::stream<pixel_axis_t> pixel_stream_t;
 
-// The output stream type, an 8-bit grayscale value AXIS packet
+/**
+ * The output stream type, a grayscale value AXIS packet.
+ **/
 typedef ap_uint<COLOR_DEPTH> grayscale_t;
 typedef axis<grayscale_t, COLOR_DEPTH> grayscale_axis_t;
 typedef hls::stream<grayscale_axis_t> grayscale_stream_t;
@@ -42,7 +46,9 @@ typedef hls::stream<grayscale_axis_t> grayscale_stream_t;
 
 /**
  * Converts the RGBA pixel into its grayscale, by taking the average of its RGB
- * channels. This is the combinational interface to the module
+ * channels.
+ *
+ * This is the combinational interface to the module
  *
  * @param[in] pixel The pixel to convert to grayscale.
  * @return The 8-bit grayscale (intensity) value of the pixel.
@@ -51,8 +57,9 @@ grayscale_t compute_grayscale(const pixel_t& pixel);
 
 /**
  * Converts the RGBA input stream into its grayscale value, by taking the
- * average of the three RGB channels. This is the sequential interface for the
- * module.
+ * average of the three RGB channels.
+ *
+ * This is the sequential interface for the module.
  *
  * @param[in] pixel_stream The input stream of pixels, as RGBA data.
  * @param[out] grayscale_stream The output stream of grayscale values
