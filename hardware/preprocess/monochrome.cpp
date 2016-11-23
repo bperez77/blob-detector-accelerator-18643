@@ -57,7 +57,7 @@ void monochrome(grayscale_stream_t& grayscale_stream,
     /* Our transfers are always aligned, so set tkeep to -1, and assert
      * tlast when we reach the last packet. */
     monochrome_axis_pkt.tkeep = -1;
-    monochrome_axis_pkt.tlast = monochrome_axis_pkt.tlast;
+    monochrome_axis_pkt.tlast = grayscale_axis_pkt.tlast;
 
     // Stream out the grayscale packet
     monochrome_stream << monochrome_axis_pkt;
