@@ -9,16 +9,15 @@
  *
  * The grayscale module simply takes a 32-bit input stream, consisting of four
  * channels, red, green, blue, and alpha, and converts it to a 8-bit intensity,
- * or grayscale value.
+ * or grayscale, value.
  *
  * @bug No known bugs.
  **/
 
-#include <hls_stream.h>     // Definition of the hls::stream class
 #include <ap_int.h>         // Arbitrary precision integer types
 
 #include "axis.h"           // Definition of the AXIS protocol structure
-#include "grayscale.h"      // Our interface
+#include "grayscale.h"      // Our interface and grayscale types
 
 /*----------------------------------------------------------------------------
  * Grayscale Module

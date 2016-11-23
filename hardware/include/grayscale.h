@@ -28,7 +28,6 @@
  *----------------------------------------------------------------------------*/
 
 // The input stream type, an RGB AXIS packet
-// The RGB AXIS packet, and its stream variant
 typedef axis<pixel_t, PIXEL_BITS> pixel_axis_t;
 typedef hls::stream<pixel_axis_t> pixel_stream_t;
 
