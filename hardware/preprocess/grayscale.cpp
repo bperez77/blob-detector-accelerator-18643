@@ -26,7 +26,7 @@
 
 /**
  * Converts the image pixel to grayscale, simply taking the average of its 3
- * grayscale channels.
+ * grayscale channels. This is the combinational interface.
  **/
 grayscale_t compute_grayscale(const pixel_t& pixel) {
 #pragma HLS INLINE
@@ -40,9 +40,8 @@ grayscale_t compute_grayscale(const pixel_t& pixel) {
 }
 
 /**
- * The main grayscale function for the module. This is what gets invoked by the
- * testbench, and what other functions would invoke to instatiate the module.
- * Converts the input RGBA image stream to a grayscale stream.
+ * Converts the stream of pixels into grayscale, using the grayscale function.
+ * This is the sequential interface for the module.
  **/
 void grayscale(pixel_stream_t& pixel_stream,
 		grayscale_stream_t& grayscale_stream) {
