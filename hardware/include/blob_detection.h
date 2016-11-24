@@ -5,7 +5,7 @@
  * @author Devon White (dww)
  * @author Yiyi Zhang (yiyiz)
  *
- * This file contains the interface to the blob detectioion module.
+ * This file contains the interface to the blob detection module.
  *
  * This defines the blob detection module interface, as both a sequential
  * (streaming) interface, and a combinational interface. It also defines the
