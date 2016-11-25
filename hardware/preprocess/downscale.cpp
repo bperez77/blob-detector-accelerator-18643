@@ -21,16 +21,29 @@
  *----------------------------------------------------------------------------*/
 
 /**
- * Computes the grascale value of the given window downscaled.
+ * Computes the grayscale value of given image window downscaled.
  *
- * This uses a simple average of all the values to determine the resultant
- * value. This is the combinational interface to the module.
+ * This uses a simple average of all the values in the window to determine what
+ * the resultant value in the downsampled image should be. This is the
+ * combinational interface to the module.
+ *
+ * @param[in] window A window of grayscale values from the image to downscale.
+ * @return The downscaled (scalar) value for the window, using an average of the
+ * pixels.
  **/
 grayscale_t compute_downscale(grayscale_window_t window) {
 #pragma HLS INLINE
 
-    // TODO: Implement
-    return 0;
+    // TODO: Test
+    int sum = 0;
+    int average = 0; 
+    for i = 0; i < DOWNSCALE_FACTOR; i++{
+	for j = 0; j < DOWNSCALE_FACTOR; j++{
+    		sum += window[i][j]
+	}
+    } 
+    average = sum / (DOWNSCALE_FACTOR * DOWNSCALE_FACTOR);
+    return average;
 }
 
 /**
