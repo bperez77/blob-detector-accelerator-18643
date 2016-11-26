@@ -37,10 +37,10 @@ grayscale_t compute_downscale(grayscale_window_t window) {
 #pragma HLS INLINE
 
     // TODO: Add in frational input support?
-    int sum = 0;
-    int average = 0; 
-    for i = 0; i < DOWNSCALE_FACTOR; i++{
-	for j = 0; j < DOWNSCALE_FACTOR; j++{
+    ap_int sum = 0;
+    ap_int average = 0; 
+    for (i = 0; i < DOWNSCALE_FACTOR; i++){
+	for (j = 0; j < DOWNSCALE_FACTOR; j++){
     		sum += window[i][j];
 	}
     } 
@@ -58,8 +58,22 @@ void downscale(grayscale_stream_t& grayscale_stream,
         grayscale_stream_t& downscale_stream) {
 #pragma HLS INLINE
 
-    // TODO: Implement
-    
+    // TODO: 
+    // Read in the next grayscale_axis packet 
+    grayscale_axis_t grayscale_axis_pkt;    
+    grayscale_stream >> grayscale_axis_pkt; 
+
+    // Compute the downscale value and send value to the downstream 
+    grayscale_axis_t downscale_stream_pkt;  
+    downscale_stream_pkt.tdata = compute_downscale();
+
+    // Our transfers are always aligned, so set tkeep to -1, and assert
+    // tlast when we reach the last packet
+    downscale_stream_pkt.tkeep = -1;
+    downscale_stream_pkt.tlast = grayscale_axis_pkt.tlast;  
+
+    // Stream out the grayscale packet 
+    downscale_stream << grayscale_axis_pkt; 
     return;
 }
 
