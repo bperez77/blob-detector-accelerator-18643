@@ -2,7 +2,9 @@
  * @file downscale.cpp
  * @date Wednesday, November 23, 2016 at 05:23:16 PM EST
  * @author Brandon Perez (bmperez)
- *
+ * @author Devon White (dww)
+ * @author Yiyi Zhang (yiyiz)
+ * 
  * This file contains the implementation of the downscale module.
  *
  * The grayscale module simply takes a 32-bit input stream, consisting
@@ -34,12 +36,12 @@
 grayscale_t compute_downscale(grayscale_window_t window) {
 #pragma HLS INLINE
 
-    // TODO: Test
+    // TODO: Add in frational input support?
     int sum = 0;
     int average = 0; 
     for i = 0; i < DOWNSCALE_FACTOR; i++{
 	for j = 0; j < DOWNSCALE_FACTOR; j++{
-    		sum += window[i][j]
+    		sum += window[i][j];
 	}
     } 
     average = sum / (DOWNSCALE_FACTOR * DOWNSCALE_FACTOR);
@@ -57,6 +59,7 @@ void downscale(grayscale_stream_t& grayscale_stream,
 #pragma HLS INLINE
 
     // TODO: Implement
+    
     return;
 }
 
