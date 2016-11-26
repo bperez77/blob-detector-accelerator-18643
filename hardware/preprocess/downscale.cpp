@@ -37,10 +37,10 @@ grayscale_t compute_downscale(grayscale_window_t window) {
 #pragma HLS INLINE
 
     // TODO: Add in frational input support?
-    ap_int sum = 0;
-    ap_int average = 0; 
-    for (i = 0; i < DOWNSCALE_FACTOR; i++){
-	for (j = 0; j < DOWNSCALE_FACTOR; j++){
+    ap_int<16> sum = 0; // window size <= 64; int_max_8_bit = 0xFF; 0xFF * 64 is a 16-bit number 
+    ap_int<8> average = 0; // this will still be an 8-bit number because of the division 
+    for (int i = 0; i < DOWNSCALE_FACTOR; i++){
+	for (int j = 0; j < DOWNSCALE_FACTOR; j++){
     		sum += window[i][j];
 	}
     } 
@@ -58,19 +58,28 @@ void downscale(grayscale_stream_t& grayscale_stream,
         grayscale_stream_t& downscale_stream) {
 #pragma HLS INLINE
 
-    // TODO: 
-    // Read in the next grayscale_axis packet 
-    grayscale_axis_t grayscale_axis_pkt;    
-    grayscale_stream >> grayscale_axis_pkt; 
+    // TODO: Add in fractional support 
+    // Read in all pixels at once  
+    grayscale_axis_t grayscale_axis_pkt[IMAGE_HEIGHT][IMAGE_WIDTH];
+    for(int i = 0; i < IMAGE_HEIGHT; i++){
+	for(int j = 0; j < IMAGE_WIDTH; j++){
+            grayscale_stream >> grayscale_axis_pkt[i][j];
+	}
+    }    
 
     // Compute the downscale value and send value to the downstream 
-    grayscale_axis_t downscale_stream_pkt;  
-    downscale_stream_pkt.tdata = compute_downscale();
+    grayscale_axis_t downscale_stream_pkt;
+    // Assuming IMAGE_HEIGHT and IMAGE_WIDTH is divisible by DOWNSCALE_FACTOR
+    for(int i = 0; i < IMAGE_HEIGHT; i+=DOWNSCALE_FACTOR){
+	for(int j = 0; j < IMAGE_WIDTH; j+=DOWNSCALE_FACTOR){
+            downscale_stream_pkt.tdata = compute_downscale(grayscale_axis_pkt[i][j]);
+	}
+    }
 
     // Our transfers are always aligned, so set tkeep to -1, and assert
     // tlast when we reach the last packet
     downscale_stream_pkt.tkeep = -1;
-    downscale_stream_pkt.tlast = grayscale_axis_pkt.tlast;  
+    downscale_stream_pkt.tlast = grayscale_axis_pkt[IMAGE_HEIGHT-1][IMAGE_WIDTH-1].tlast;
 
     // Stream out the grayscale packet 
     downscale_stream << grayscale_axis_pkt; 
