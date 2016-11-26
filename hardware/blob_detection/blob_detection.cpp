@@ -63,15 +63,29 @@ static const log_response_t LOG_FILTER[BLOB_FILTER_HEIGHT][BLOB_FILTER_WIDTH] = 
  *----------------------------------------------------------------------------*/
 
 /**
- * Decides if the given window corresponds to a blob detection.
+ * Decides if the given window in the image corresponds a blob detection.
  *
- * This is the combinational interface to the module.
+ * This computes the LoG filter response for the given window of monochrome
+ * values, and thresholds the response to determine if this window corresponds
+ * to a blob. This is the combinational interface to the module.
+ *
+ * @param[in] window A window of monochrome values from an image.
+ * @return 1 if the window corresponds to a blob, 0 otherwise.
  **/
+
 blob_detection_t compute_blob_detection(monochrome_window_t window) {
 #pragma HLS INLINE
 
-    // FIXME: Implement
-    return 0;
+    // FIXME: Test
+    
+    // convolute two matrices 
+    log_repsonse_t response = 0;   
+    for(int i = 0; i < BlOB_FILTER_HEIGHT; i++){
+    	for(int j =0; j < BLOB_FILTER_WIDTH; j++){
+            response += window[i][j] * LOG_FILTER[i][j];
+        }
+    } 
+    return response>=LOG_RESPONSE_THRESHOLD;
 }
 
 /**
@@ -86,7 +100,28 @@ void blob_detection(monochrome_stream_t& monochrome_stream,
 #pragma HLS INLINE
 
     // FIXME: Implement
-    return;
+    
+    // Read in the next image pixel packet 
+    monochrome_axis_t monochrome_axis_pkt;
+    monochrome_stream >> monochrome_axis_pkt;
+
+    // Compute the grayscale value and send the value downstream 
+/*    
+template <typename IN_T, typename OUT_T, typename IN_STREAM_T, typename OUT_STREAM_T, 
+          int IMAGE_WIDTH, int KERNEL_HEIGHT, int KERNEL_WIDTH,
+          OUT_T (*window_f)(IN_T window[KERNEL_HEIGHT][KERNEL_WIDTH])>
+struct window_pipeline {*/
+
+    blob_detection_axis_t blob_detection_axis_pkt;
+    blob_detection_axis_pkt = compute_blob_detection() // need to use the window pipeline 
+
+    blob_detection_axis_pkt.tkeep = -1;
+    blob_detection_axis_pkt.tlast = monochrome_axis_pkt;
+
+    // Stream out the blob detection pkt 
+    blob_detection_stream << blob_detection_axis_pkt; 
+
+return;
 }
 
 /*----------------------------------------------------------------------------
