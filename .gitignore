@@ -6,13 +6,25 @@
 # Allow for files nested within directories
 !*/
 
-# Allow for gitignore files
-!.gitignore
-
 # Allow for C/C++ and header files
 !*.c
 !*.cpp
 !*.h
 
+# Allow for MATLAB script files
+!*.m
+
+# Allow for shell and python scripts
+!*.sh
+!*.py
+
+# Allow for Makefiles
+!Makefile
+!*.mk
+
 # Allow for Latex files
 !*.tex
+
+# Allow for gitignore files
+!.gitignore
+
