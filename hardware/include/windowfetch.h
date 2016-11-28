@@ -20,8 +20,8 @@
 //IN_STREAM_T should be a wrapper of IN_T 
 //OUT_STREAM_T should be a wrapper of OUT_T
 template <typename IN_T, typename OUT_T, typename IN_STREAM_T, typename OUT_STREAM_T, 
-          int IMAGE_WIDTH, int KERNEL_HEIGHT, int KERNEL_WIDTH,
-          OUT_T (*window_f)(IN_T window[KERNEL_HEIGHT][KERNEL_WIDTH])>
+          int IMAGE_WIDTH, int IMAGE_HEIGHT, int KERNEL_HEIGHT, int KERNEL_WIDTH,
+          OUT_T (*window_f)(IN_T window[KERNEL_HEIGHT][KERNEL_WIDTH], int start_row, int start_col)>
 struct window_pipeline {
     
     IN_T rowbuffer[KERNEL_HEIGHT][IMAGE_WIDTH];
@@ -54,45 +54,71 @@ struct window_pipeline {
     // window operation 
     void window_op(IN_STREAM_T& in_stream, OUT_STREAM_T& out_stream)
     { 
-        IN_T in_pkt;
-        OUT_T out_pkt;
-        //Input Processing 
-        in_stream >> in_pkt;
-        // tail is the newest elem
-        // head is the oldest elem   
-        rowbuffer[tail_row][tail_col] = in_pkt; 
-        
+    	IN_T in_pkt;
+    	OUT_T out_pkt;
+    	IN_T zero_pkt;
+    	zero_pkt.tdata = 0;
+		zero_pkt.tlast = 0;
+    	zero_pkt.tkeep = -1;
+    	int offset = KERNEL_WIDTH/2 + (IMAGE_WIDTH*(KERNEL_HEIGHT/2));
+    	int in_pointer = 0; //Which pixel of the input image are we looking at?
+    	int out_pointer = -offset; //Which pixel of the output image are we looking at?
+    	for (int i = 0; i < IMAGE_WIDTH * IMAGE_HEIGHT + offset; i++) {
 
-        //Window Forming
-        printf("Row, head: %d, tail: %d, diff: %d\n", head_row, tail_row, diffOne(head_row, tail_row, KERNEL_HEIGHT));
-        if (diffOne(head_row, tail_row, KERNEL_HEIGHT)) {
-            for (int i = 0; i < KERNEL_HEIGHT; i++) {
-            	printf("Store window row: %d, col: %d, data: %d\n", i, tail_win, rowbuffer[i][tail_col].tdata);
-                window[i][tail_win] = rowbuffer[i][tail_col]; //When i == tail_col we should really be forwarding, not loading again
-            }
-            printf("Window, head: %d, tail: %d, diff: %d\n", head_win, tail_win, diffOne(head_win, tail_win, KERNEL_WIDTH));
-            //Output Processing
-            if (diffOne(head_win, tail_win, KERNEL_WIDTH)) {
-                out_pkt = window_f(window);
-                out_stream << out_pkt;
-            }
-            tail_win = (tail_win + 1) % KERNEL_WIDTH;
-            head_win = (tail_win == head_win) ? head_win + 1 : head_win;
-        }
+    		//Input Processing
+    		//Stop loading packets when we've loaded them all
+    		if (in_pointer < IMAGE_WIDTH*IMAGE_HEIGHT)
+    			in_stream >> in_pkt;
+			rowbuffer[tail_row][tail_col] = in_pkt;
 
-        //printf("Window, head:%d, tail:%d, mod:%d\n", head_win, tail_win, diffOne(head_win, tail_win));
-        //Output Processing
+			//Window Forming:
+			//If we have loaded in KERNEL_HEIGHT-1 full rows, we can load columns into the window
+			if (in_pointer >= (KERNEL_HEIGHT-1)*IMAGE_WIDTH) {
+				for (int i = 0; i < KERNEL_HEIGHT; i++) {
+					window[i][tail_win] = rowbuffer[i][tail_col]; //When i == tail_col we should really be forwarding, not loading again
+				}
+			}
+
+			//Output Processing
+			//Only care if output is inside the out window
+			//In addition, if we're on an edge, top, bottom, left, or right, assign 0 packets
+			if (out_pointer >= 0) {
+				if (out_pointer%IMAGE_WIDTH < KERNEL_WIDTH/2 || //Left rows
+					out_pointer%IMAGE_WIDTH >= IMAGE_WIDTH - KERNEL_WIDTH/2 || //Right rows
+					out_pointer < IMAGE_WIDTH*(KERNEL_HEIGHT/2) || //Top rows
+					out_pointer >= (IMAGE_HEIGHT - KERNEL_HEIGHT/2) * IMAGE_WIDTH) { //Bottom rows
+					out_pkt.tdata = 0;
+					out_pkt.tlast = (out_pointer == IMAGE_WIDTH*IMAGE_HEIGHT-1) ? 1 : 0;
+					out_pkt.tkeep = -1;
+				}
+				else {
+					out_pkt = window_f(window, head_row, head_win);
+				}
+				out_stream << out_pkt;
+			}
 
 
-        //update the head, tail position 
-        update_tail();
-        update_head();
 
+			//update the rowbuffer head, tail position
+			update_tail();
+			update_head();
+
+			//update the window head and tail
+			tail_win = (tail_win + 1) % KERNEL_WIDTH;
+			head_win = (tail_win == head_win) ? (head_win + 1) % KERNEL_WIDTH : head_win;
+
+			//update the in and out
+			in_pointer = in_pointer + 1;
+			out_pointer = out_pointer + 1;
+    	}
+    	if (out_pointer != IMAGE_WIDTH * IMAGE_HEIGHT) {
+    		printf("ERROR!!!!!, out_pointer: %d, expected: %d\n", out_pointer, IMAGE_WIDTH * IMAGE_HEIGHT);
+    	}
      }
-     
 
 
-     // helper function
+
+     // helper functions
      void update_tail(){ 
         if ((tail_col + 1) == IMAGE_WIDTH){
              //update row
@@ -101,22 +127,12 @@ struct window_pipeline {
         }
         tail_col = (tail_col + 1) % IMAGE_WIDTH;
      }
-
-     // update head 
      void update_head(){
          //update head_row
          if (tail_row == head_row && !init_row){
             head_row = (head_row + 1) % KERNEL_HEIGHT;
          }
      }
-
-     int diffOne(uint h, uint t, uint size) { //(h - t) % KERNEL_WIDTH == 1
-    	 if ((h - t) == 1) return 1;
-    	 if (h == 0 && (t == size - 1)) return 1;
-    	 return 0;
-     }
-
-     
 };
 
 
