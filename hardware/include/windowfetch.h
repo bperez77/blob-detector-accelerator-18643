@@ -8,6 +8,9 @@
  * @bug No known bugs.
  **/
 
+#ifndef WINDOW_FETCH_H_
+#define WINDOW_FETCH_H_
+
 //Add #define here 
 
 #include <hls_stream.h>         // Definition of the stream class
@@ -20,7 +23,7 @@
 //IN_STREAM_T should be a wrapper of IN_T 
 //OUT_STREAM_T should be a wrapper of OUT_T
 template <typename IN_T, typename OUT_T, size_t IN_T_BITS, size_t OUT_T_BITS,
-          int IMAGE_WIDTH, int IMAGE_HEIGHT, int KERNEL_HEIGHT, int KERNEL_WIDTH,
+          int IMAGE_HEIGHT, int IMAGE_WIDTH, int KERNEL_HEIGHT, int KERNEL_WIDTH,
           OUT_T (*window_f)(IN_T window[KERNEL_HEIGHT][KERNEL_WIDTH], int start_row, int start_col)>
 struct window_pipeline {
     
@@ -56,7 +59,6 @@ struct window_pipeline {
 
     typedef axis<OUT_T, OUT_T_BITS> out_pkt_t;
     typedef hls::stream<out_pkt_t> out_stream_t;
-
 
     // window operation 
     void window_op(in_stream_t& in_stream, out_stream_t& out_stream)
@@ -137,5 +139,5 @@ struct window_pipeline {
      }
 };
 
-
+#endif /* WINDOW_FETCH_H_ */
 
