@@ -19,7 +19,7 @@
 
 //IN_STREAM_T should be a wrapper of IN_T 
 //OUT_STREAM_T should be a wrapper of OUT_T
-template <typename IN_T, typename OUT_T, typename IN_STREAM_T, typename OUT_STREAM_T, 
+template <typename IN_T, typename OUT_T, size_t IN_T_BITS, size_t OUT_T_BITS,
           int IMAGE_WIDTH, int IMAGE_HEIGHT, int KERNEL_HEIGHT, int KERNEL_WIDTH,
           OUT_T (*window_f)(IN_T window[KERNEL_HEIGHT][KERNEL_WIDTH], int start_row, int start_col)>
 struct window_pipeline {
@@ -51,15 +51,18 @@ struct window_pipeline {
         tail_win = 0;
     }
 
+    typedef axis<IN_T, IN_T_BITS> in_pkt_t;
+    typedef hls::stream<in_pkt_t> in_stream_t;
+
+    typedef axis<OUT_T, OUT_T_BITS> out_pkt_t;
+    typedef hls::stream<out_pkt_t> out_stream_t;
+
+
     // window operation 
-    void window_op(IN_STREAM_T& in_stream, OUT_STREAM_T& out_stream)
+    void window_op(in_stream_t& in_stream, out_stream_t& out_stream)
     { 
-    	IN_T in_pkt;
-    	OUT_T out_pkt;
-    	IN_T zero_pkt;
-    	zero_pkt.tdata = 0;
-		zero_pkt.tlast = 0;
-    	zero_pkt.tkeep = -1;
+    	in_pkt_t in_pkt;
+    	out_pkt_t out_pkt;
     	int offset = KERNEL_WIDTH/2 + (IMAGE_WIDTH*(KERNEL_HEIGHT/2));
     	int in_pointer = 0; //Which pixel of the input image are we looking at?
     	int out_pointer = -offset; //Which pixel of the output image are we looking at?
@@ -69,7 +72,7 @@ struct window_pipeline {
     		//Stop loading packets when we've loaded them all
     		if (in_pointer < IMAGE_WIDTH*IMAGE_HEIGHT)
     			in_stream >> in_pkt;
-			rowbuffer[tail_row][tail_col] = in_pkt;
+			rowbuffer[tail_row][tail_col] = in_pkt.tdata;
 
 			//Window Forming:
 			//If we have loaded in KERNEL_HEIGHT-1 full rows, we can load columns into the window
@@ -92,7 +95,9 @@ struct window_pipeline {
 					out_pkt.tkeep = -1;
 				}
 				else {
-					out_pkt = window_f(window, head_row, head_win);
+					out_pkt.tdata = window_f(window, head_row, head_win);
+					out_pkt.tlast = 0;
+					out_pkt.tkeep = -1;
 				}
 				out_stream << out_pkt;
 			}
@@ -110,9 +115,6 @@ struct window_pipeline {
 			//update the in and out
 			in_pointer = in_pointer + 1;
 			out_pointer = out_pointer + 1;
-    	}
-    	if (out_pointer != IMAGE_WIDTH * IMAGE_HEIGHT) {
-    		printf("ERROR!!!!!, out_pointer: %d, expected: %d\n", out_pointer, IMAGE_WIDTH * IMAGE_HEIGHT);
     	}
      }
 
