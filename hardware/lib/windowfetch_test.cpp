@@ -16,48 +16,31 @@
 
 typedef axis<int, 32> num_axis_t;
 typedef hls::stream<num_axis_t> num_stream_t;
-const int KERNEL_HEIGHT = 5;
-const int KERNEL_WIDTH = 7;
-const int IMAGE_WIDTH = 27;
-const int IMAGE_HEIGHT = 31;
+const int KERNEL_HEIGHT = 3;
+const int KERNEL_WIDTH = 3;
+const int IMAGE_WIDTH = 32;
+const int IMAGE_HEIGHT = 32;
 
 
-//this is just a simple summing kernel
-int sum_window(int window[KERNEL_HEIGHT][KERNEL_WIDTH], int start_row, int start_col){
-    int sum, last;
-    int pkt, outpkt;
-    sum = 0;
-    last = 0;
-    for(int i = 0; i < KERNEL_HEIGHT; i++){
-        for(int j = 0; j < KERNEL_WIDTH; j++){
-            pkt = window[(i+start_row) % KERNEL_HEIGHT][(j+start_col)%KERNEL_WIDTH];//(j+head_col) % KERNEL_WIDTH];
-            sum += pkt;
-            printf("Window, i:%d, j:%d, data: %d sum: %d\n", i, j, pkt, sum);
-        }
-    }
-    return outpkt;
-}
-
+extern int doWindow(num_stream_t& stream1, num_stream_t& stream2);
 
 int main() {
     //num_axis_t -> IN_T num_axis_t -> OUT_T
     //num_stream_t -> IN_STREAM_T num_stream_t-> OUT_STREAM_T
     //32 -> IMAGE_WIDTH 3-> KERNEL_HEIGHT 4-> KERNEL_WIDTH
-    window_pipeline<int, int, 32, 32, IMAGE_WIDTH, IMAGE_HEIGHT, KERNEL_HEIGHT, KERNEL_WIDTH, sum_window> w;
 
     num_stream_t stream1;
     num_stream_t stream2;
     for (int i = 0; i < IMAGE_WIDTH*IMAGE_HEIGHT; i++) {
         num_axis_t inpkt;
-        inpkt.tdata = i;
+        inpkt.tdata = 1;
         inpkt.tkeep = -1;
         inpkt.tlast = (i == IMAGE_WIDTH*IMAGE_HEIGHT-1) ? 1 : 0;
         //printf("Tlast: %d\n", inpkt.tlast.to_int());
         stream1 << inpkt;
     }
 
-    printf("Window Op\n");
-    w.window_op(stream1, stream2);
+    doWindow(stream1, stream2);
 
     int last = 0;
     int count = 0;
