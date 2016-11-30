@@ -21,6 +21,8 @@
 #include "axis.h"                   // Definition of the AXIS protocol structure
 #include "monochrome.h"             // Definition of the monochrome types
 #include "blob_detection.h"         // Our interface and blob detection types
+#include "windowfetch.h"           // Our implementation of window operation
+#include "image.h"                  // Definition of image info 
 
 /*----------------------------------------------------------------------------
  * Internal Definitions
@@ -73,14 +75,15 @@ static const log_response_t LOG_FILTER[BLOB_FILTER_HEIGHT][BLOB_FILTER_WIDTH] = 
  * @return 1 if the window corresponds to a blob, 0 otherwise.
  **/
 
-blob_detection_t compute_blob_detection(monochrome_window_t window) {
+blob_detection_t compute_blob_detection(monochrome_window_t window, int start_row, int start_col) {
 #pragma HLS INLINE
 
     // FIXME: Test
-    
-    // convolute two matrices 
-    log_repsonse_t response = 0;   
-    for(int i = 0; i < BlOB_FILTER_HEIGHT; i++){
+    // Convolute two matrices
+	(void) start_row;
+	(void) start_col;
+    log_response_t response = 0;
+    for(int i = 0; i < BLOB_FILTER_HEIGHT; i++){
     	for(int j =0; j < BLOB_FILTER_WIDTH; j++){
             response += window[i][j] * LOG_FILTER[i][j];
         }
@@ -99,29 +102,16 @@ void blob_detection(monochrome_stream_t& monochrome_stream,
         blob_detection_stream_t& blob_detection_stream) {
 #pragma HLS INLINE
 
-    // FIXME: Implement
-    
-    // Read in the next image pixel packet 
-    monochrome_axis_t monochrome_axis_pkt;
-    monochrome_stream >> monochrome_axis_pkt;
+    // FIXME: Test
 
-    // Compute the grayscale value and send the value downstream 
-/*    
-template <typename IN_T, typename OUT_T, typename IN_STREAM_T, typename OUT_STREAM_T, 
-          int IMAGE_WIDTH, int KERNEL_HEIGHT, int KERNEL_WIDTH,
-          OUT_T (*window_f)(IN_T window[KERNEL_HEIGHT][KERNEL_WIDTH])>
-struct window_pipeline {*/
+    // Declare a window object   
+    window_pipeline <monochrome_t, blob_detection_t, 1, 1, IMAGE_HEIGHT,IMAGE_WIDTH,
+    BLOB_FILTER_HEIGHT, BLOB_FILTER_WIDTH, compute_blob_detection> w;
+ 
+    // Apply this operation
+    w.window_op(monochrome_stream, blob_detection_stream);
 
-    blob_detection_axis_t blob_detection_axis_pkt;
-    blob_detection_axis_pkt = compute_blob_detection() // need to use the window pipeline 
-
-    blob_detection_axis_pkt.tkeep = -1;
-    blob_detection_axis_pkt.tlast = monochrome_axis_pkt;
-
-    // Stream out the blob detection pkt 
-    blob_detection_stream << blob_detection_axis_pkt; 
-
-return;
+    return;
 }
 
 /*----------------------------------------------------------------------------

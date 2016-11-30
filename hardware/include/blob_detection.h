@@ -63,7 +63,7 @@ typedef hls::stream<blob_detection_axis_t> blob_detection_stream_t;
  * @param[in] window A window of monochrome values from an image.
  * @return 1 if the window corresponds to a blob, 0 otherwise.
  **/
-blob_detection_t compute_blob_detection(monochrome_window_t window);
+blob_detection_t compute_blob_detection(monochrome_window_t window, int start_row, int start_col);
 
 /**
  * Converts the monochrome input stream into an output LoG detection stream.
