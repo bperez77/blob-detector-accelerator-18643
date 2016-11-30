@@ -60,29 +60,27 @@ void downscale(grayscale_stream_t& grayscale_stream,
 
     // TODO: Add in fractional support 
     // Read in all pixels at once  
-    grayscale_axis_t grayscale_axis_pkt[IMAGE_HEIGHT][IMAGE_WIDTH];
-    for(int i = 0; i < IMAGE_HEIGHT; i++){
-	for(int j = 0; j < IMAGE_WIDTH; j++){
-            grayscale_stream >> grayscale_axis_pkt[i][j];
-	}
+    grayscale_t grayscale_pkt[DOWNSCALE_FACTOR][DOWNSCALE_FACTOR];
+    grayscale_axis_t downscale_stream_pkt;
+    for(int i = 0; i < IMAGE_HEIGHT; i+=DOWNSCALE_FACTOR){
+       	for(int j = 0; j < IMAGE_WIDTH; j+=DOWNSCALE_FACTOR){
+       		for(int i = 0; i < DOWNSCALE_FACTOR; i++){
+       			for(int j = 0; j < DOWNSCALE_FACTOR; j++){
+       				grayscale_pkt[i][j] = grayscale_stream.read().tdata;
+       			}
+       		}
+       		downscale_stream_pkt.tdata = compute_downscale(grayscale_pkt);
+       	}
     }    
 
-    // Compute the downscale value and send value to the downstream 
-    grayscale_axis_t downscale_stream_pkt;
-    // Assuming IMAGE_HEIGHT and IMAGE_WIDTH is divisible by DOWNSCALE_FACTOR
-    for(int i = 0; i < IMAGE_HEIGHT; i+=DOWNSCALE_FACTOR){
-	for(int j = 0; j < IMAGE_WIDTH; j+=DOWNSCALE_FACTOR){
-            downscale_stream_pkt.tdata = compute_downscale(grayscale_axis_pkt[i][j]);
-	}
-    }
 
     // Our transfers are always aligned, so set tkeep to -1, and assert
     // tlast when we reach the last packet
     downscale_stream_pkt.tkeep = -1;
-    downscale_stream_pkt.tlast = grayscale_axis_pkt[IMAGE_HEIGHT-1][IMAGE_WIDTH-1].tlast;
+    downscale_stream_pkt.tlast = grayscale_pkt[DOWNSCALE_FACTOR-1][DOWNSCALE_FACTOR-1];
 
     // Stream out the grayscale packet 
-    downscale_stream << grayscale_axis_pkt; 
+    downscale_stream << downscale_stream_pkt;
     return;
 }
 
