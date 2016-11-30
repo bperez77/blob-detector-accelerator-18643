@@ -79,15 +79,16 @@ blob_detection_t compute_blob_detection(monochrome_window_t window, int start_ro
 #pragma HLS INLINE
 
     // FIXME: Test
-    // Convolute two matrices
-	(void) start_row;
-	(void) start_col;
+    // convolve two matrices
     log_response_t response = 0;
-    for(int i = 0; i < BLOB_FILTER_HEIGHT; i++){
-    	for(int j =0; j < BLOB_FILTER_WIDTH; j++){
-            response += window[i][j] * LOG_FILTER[i][j];
+    for(int i = 0; i < BLOB_FILTER_HEIGHT ; i++){
+    	for(int j = 0; j < BLOB_FILTER_WIDTH; j++){
+    		int row = (start_row + i) % BLOB_FILTER_HEIGHT;
+    		int col = (start_col + j) % BLOB_FILTER_WIDTH;
+            response += window[row][col] * LOG_FILTER[row][col];
         }
     } 
+
     return response>=LOG_RESPONSE_THRESHOLD;
 }
 
@@ -95,7 +96,7 @@ blob_detection_t compute_blob_detection(monochrome_window_t window, int start_ro
  * Converts the monochrome stream into a stream of blob detections.
  *
  * The blob detections are binary values that indicate if the pixel is the
- * centerpoint of a detected blob. This is the sequential interface to the
+ * center point of a detected blob. This is the sequential interface to the
  * module.
  **/
 void blob_detection(monochrome_stream_t& monochrome_stream,
