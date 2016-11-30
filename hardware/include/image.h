@@ -59,8 +59,8 @@ struct pixel {
     typedef ap_uint<COLOR_DEPTH> color_t;   // Definition of a color channel
 
     color_t red;                            // Red channel of the pixel
-    color_t blue;                           // Blue channel of the pixel
     color_t green;                          // Green channel of the pixel
+    color_t blue;                           // Blue channel of the pixel
     color_t alpha;                          // Alpha channel of the pixel
 
     // Default constructor for the pixel

@@ -25,8 +25,8 @@ static const int IMAGE_HEIGHT   = 1080;
 
 typedef struct pixel {
     uint8_t red;                // Red channel of the pixel
-    uint8_t blue;               // Blue channel of the pixel
     uint8_t green;              // Green channel of the pixel
+    uint8_t blue;               // Blue channel of the pixel
     uint8_t alpha;              // Alpha channel of the pixel
 
     // Default constructor for the pixel
