@@ -83,6 +83,7 @@ static int init_devices(devices_context_t& devices)
     if (rc != XST_SUCCESS) {
         log_err("Error: %s: Unable to mount SD card as a FAT filesystem",
                 SD_CARD_PATH);
+        return rc;
     }
 
     // Initialize the AXI DMA devices
