@@ -21,8 +21,8 @@
 #include "axis.h"                   // Definition of the AXIS protocol structure
 #include "monochrome.h"             // Definition of the monochrome types
 #include "blob_detection.h"         // Our interface and blob detection types
-#include "windowfetch.h"           // Our implementation of window operation
-#include "image.h"                  // Definition of image info 
+#include "windowfetch.h"            // Our implementation of window operation
+#include "image.h"                  // Definition of image info
 
 /*----------------------------------------------------------------------------
  * Internal Definitions
@@ -87,7 +87,7 @@ blob_detection_t compute_blob_detection(monochrome_window_t window, int start_ro
     		int col = (start_col + j) % BLOB_FILTER_WIDTH;
             response += window[row][col] * LOG_FILTER[row][col];
         }
-    } 
+    }
 
     return response>=LOG_RESPONSE_THRESHOLD;
 }
@@ -99,16 +99,18 @@ blob_detection_t compute_blob_detection(monochrome_window_t window, int start_ro
  * center point of a detected blob. This is the sequential interface to the
  * module.
  **/
+template <int IMAGE_WIDTH, int IMAGE_HEIGHT>
 void blob_detection(monochrome_stream_t& monochrome_stream,
         blob_detection_stream_t& blob_detection_stream) {
 #pragma HLS INLINE
 
     // FIXME: Test
 
-    // Declare a window object   
-    window_pipeline <monochrome_t, blob_detection_t, 1, 1, IMAGE_HEIGHT,IMAGE_WIDTH,
-    BLOB_FILTER_HEIGHT, BLOB_FILTER_WIDTH, compute_blob_detection> w;
- 
+    // Declare a window object
+    window_pipeline <monochrome_t, blob_detection_t, 1, 1, IMAGE_HEIGHT,
+            IMAGE_WIDTH, BLOB_FILTER_HEIGHT, BLOB_FILTER_WIDTH,
+            compute_blob_detection> w;
+
     // Apply this operation
     w.window_op(monochrome_stream, blob_detection_stream);
 
@@ -131,6 +133,7 @@ void blob_detection_top(monochrome_stream_t& monochrome_stream,
 #pragma HLS INTERFACE axis port=monochrome_stream
 #pragma HLS INTERFACE axis port=blob_detection_stream
 
-    blob_detection(monochrome_stream, blob_detection_stream);
+    blob_detection<IMAGE_WIDTH, IMAGE_HEIGHT>(monochrome_stream,
+    		blob_detection_stream);
     return;
 }

@@ -63,7 +63,8 @@ typedef hls::stream<blob_detection_axis_t> blob_detection_stream_t;
  * @param[in] window A window of monochrome values from an image.
  * @return 1 if the window corresponds to a blob, 0 otherwise.
  **/
-blob_detection_t compute_blob_detection(monochrome_window_t window, int start_row, int start_col);
+blob_detection_t compute_blob_detection(monochrome_window_t window,
+        int start_row, int start_col);
 
 /**
  * Converts the monochrome input stream into an output LoG detection stream.
@@ -73,9 +74,13 @@ blob_detection_t compute_blob_detection(monochrome_window_t window, int start_ro
  * pixel is a centerpoint of a detected blob in an image. This is the sequential
  * interface to the module.
  *
+ * @tparam IMAGE_WIDTH The width of the image being processed.
+ * @tparam IMAGE_HEIGHT The height of the image being processed.
+ *
  * @param[in] monochrome_stream The input stream of monochrome values.
  * @param[out] blob_detection_stream The output stream of LoG detections.
  **/
+template <int IMAGE_WIDTH, int IMAGE_HEIGHT>
 void blob_detection(monochrome_stream_t& monochrome_stream,
         blob_detection_stream_t& blob_detection_stream);
 
