@@ -14,28 +14,13 @@
 #include "blob_detection.h"         // Our interface and blob detection types
 #include "image.h"                  // Definition of image info
 
-
 /*----------------------------------------------------------------------------
  * Internal Definitions
  *----------------------------------------------------------------------------*/
 
 // The size of the test vector (image)
-const int TEST_VEC_WIDTH        = 32;
-const int TEST_VEC_HEIGHT       = 32;
-
-/*----------------------------------------------------------------------------
- * Testbench
- *----------------------------------------------------------------------------*/
-
-int main()
-{
-	monochrome_stream_t monochrome_stream;
-    blob_detection_stream_t blob_detection_stream;
-
-	blob_detection<TEST_VEC_WIDTH, TEST_VEC_HEIGHT>(monochrome_stream,
-			blob_detection_stream);
-    return 0;
-}
+const int TEST_VEC_WIDTH        = IMAGE_WIDTH;
+const int TEST_VEC_HEIGHT       = IMAGE_HEIGHT;
 
 /*----------------------------------------------------------------------------
  * Test Vectors
@@ -112,3 +97,46 @@ static const ap_uint<1> OUTPUT_DETECTIONS[TEST_VEC_HEIGHT][TEST_VEC_WIDTH] = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,},
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,},
 };
+
+/*----------------------------------------------------------------------------
+ * Testbench
+ *----------------------------------------------------------------------------*/
+
+int main()
+{
+	monochrome_stream_t monochrome_stream;
+    blob_detection_stream_t blob_detection_stream;
+
+    for (int i = 0; i < TEST_VEC_WIDTH*TEST_VEC_HEIGHT; i++) {
+    	blob_detection_axis_t inpkt;
+    	inpkt.tdata = INPUT_MONOCHROME[0][i];
+    	inpkt.tkeep = -1;
+    	inpkt.tlast = (i == TEST_VEC_WIDTH*TEST_VEC_HEIGHT-1) ? 1 : 0;
+    	monochrome_stream << inpkt;
+    }
+
+	blob_detection(monochrome_stream, blob_detection_stream);
+
+	int last = 0;
+	int count = 0;
+	int image[TEST_VEC_HEIGHT][TEST_VEC_WIDTH];
+
+	while (last == 0) {
+		if (!blob_detection_stream.empty()) {
+			blob_detection_axis_t outpkt;
+			blob_detection_stream >> outpkt;
+			last = outpkt.tlast.to_int();
+			image[0][count] = outpkt.tdata.to_int();
+			count += 1;
+		}
+	}
+	printf("Count: %d\n", count);
+	for (int i = 0; i < TEST_VEC_HEIGHT; i++) {
+		for (int j = 0; j < TEST_VEC_WIDTH; j++) {
+			printf("%d ", image[i][j]);
+		}
+		printf("\n");
+	}
+
+	return 0;
+}

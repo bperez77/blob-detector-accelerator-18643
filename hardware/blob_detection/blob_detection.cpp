@@ -99,7 +99,6 @@ blob_detection_t compute_blob_detection(monochrome_window_t window, int start_ro
  * center point of a detected blob. This is the sequential interface to the
  * module.
  **/
-template <int IMAGE_WIDTH, int IMAGE_HEIGHT>
 void blob_detection(monochrome_stream_t& monochrome_stream,
         blob_detection_stream_t& blob_detection_stream) {
 #pragma HLS INLINE
@@ -133,7 +132,7 @@ void blob_detection_top(monochrome_stream_t& monochrome_stream,
 #pragma HLS INTERFACE axis port=monochrome_stream
 #pragma HLS INTERFACE axis port=blob_detection_stream
 
-    blob_detection<IMAGE_WIDTH, IMAGE_HEIGHT>(monochrome_stream,
+    blob_detection(monochrome_stream,
     		blob_detection_stream);
     return;
 }

@@ -20,13 +20,16 @@
  * Image Format Parameters
  *----------------------------------------------------------------------------*/
 
-// The number of rows and columns in the image being processed (1080p)
-
 /**
  * The dimensions of the image being processed, which is a 1080p image.
  **/
+#ifdef __SYNTHESIS__
 static const int IMAGE_WIDTH                = 1920;
 static const int IMAGE_HEIGHT               = 1080;
+#else
+static const int IMAGE_WIDTH                = 32;
+static const int IMAGE_HEIGHT               = 32;
+#endif /* BLOB_DETECTION_DEBUG */
 
 /**
  * The number of bits needed to represent a color channel in the image.

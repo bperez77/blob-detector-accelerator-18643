@@ -80,7 +80,6 @@ blob_detection_t compute_blob_detection(monochrome_window_t window,
  * @param[in] monochrome_stream The input stream of monochrome values.
  * @param[out] blob_detection_stream The output stream of LoG detections.
  **/
-template <int IMAGE_WIDTH, int IMAGE_HEIGHT>
 void blob_detection(monochrome_stream_t& monochrome_stream,
         blob_detection_stream_t& blob_detection_stream);
 
