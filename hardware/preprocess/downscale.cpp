@@ -36,16 +36,14 @@
 grayscale_t compute_downscale(grayscale_window_t window) {
 #pragma HLS INLINE
 
-	// TODO: Add in fractional input support?
+    // TODO: Add in fractional input support?
     ap_int<16> sum = 0;
     ap_int<8> average = 0;
     for (int i = 0; i < DOWNSCALE_FACTOR; i++){
     	for (int j = 0; j < DOWNSCALE_FACTOR; j++){
     		sum += window[i][j];
-    		//printf("sum = %d\n", sum.to_int());
     	}
     } 
-    //printf("sum = %d\n", sum.to_int());
     average = sum / (DOWNSCALE_FACTOR * DOWNSCALE_FACTOR);
     return average;
 }

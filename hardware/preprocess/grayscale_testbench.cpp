@@ -13,11 +13,11 @@
 // TODO: Make more robust
 int main()
 {
-	// Input and output streams for grayscale
-	pixel_stream_t pixel_stream;
-	grayscale_stream_t grayscale_stream;
+    // Input and output streams for grayscale
+    pixel_stream_t pixel_stream;
+    grayscale_stream_t grayscale_stream;
 
-	// Setup the pixel AXIS packet
+    // Setup the pixel AXIS packet
     pixel_axis_t pixel_axis_pkt;
     pixel_axis_pkt.tdata = 0x00010203;
     pixel_axis_pkt.tkeep = -1;

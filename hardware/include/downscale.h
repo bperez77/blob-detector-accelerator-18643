@@ -70,7 +70,6 @@ void downscale(grayscale_stream_t& grayscale_stream, grayscale_stream_t& downsca
 
     // TODO: Add in fractional support
     // Read in all pixels at once
-	//grayscale_t gray_res;
 	grayscale_t grayscale_buffer[DOWNSCALE_FACTOR-1][IMAGE_WIDTH];
 	grayscale_t block[DOWNSCALE_FACTOR][DOWNSCALE_FACTOR];
 	grayscale_axis_t downscale_stream_pkt;

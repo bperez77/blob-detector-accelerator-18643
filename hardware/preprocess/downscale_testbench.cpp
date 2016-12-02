@@ -34,22 +34,21 @@ int main(){
 	for(int i = 0; i < TEST_HEIGHT; i++){
 		for(int j = 0; j < TEST_WIDTH; j++){
 			image[i][j] = 0xFF;
-            image_pixel_pkt.tdata = image[i][j];
-            image_pixel_pkt.tkeep = -1;
-            if (i == TEST_HEIGHT-1 && j == TEST_WIDTH -1){
-            	image_pixel_pkt.tlast = 1;
-            }else{
-            	image_pixel_pkt.tlast = 0;
-            }
-            grayscale_stream <<image_pixel_pkt;
-			//printf("image[%d][%d] = %d\n", i, j, image[i][j].to_int());
+                        image_pixel_pkt.tdata = image[i][j];
+                        image_pixel_pkt.tkeep = -1;
+                        if (i == TEST_HEIGHT-1 && j == TEST_WIDTH -1){
+            	        	image_pixel_pkt.tlast = 1;
+                        }else{
+            	                image_pixel_pkt.tlast = 0;
+                        }
+                        grayscale_stream <<image_pixel_pkt;
 		}
 	}
 	
 
 	grayscale_stream_t downscale_stream;
 	grayscale_axis_t downscale_pkt;
-    last = 0;
+        last = 0;
 	downscale<TEST_HEIGHT, TEST_WIDTH>(grayscale_stream, downscale_stream);
 	while (last == 0){
 		downscale_stream >> downscale_pkt;
