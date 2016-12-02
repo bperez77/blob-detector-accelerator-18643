@@ -85,8 +85,9 @@ blob_detection_t compute_blob_detection(monochrome_window_t window, int start_ro
     	for(int j = 0; j < BLOB_FILTER_WIDTH; j++){
     		int row = (start_row + i < BLOB_FILTER_HEIGHT) ? start_row + i : start_row + i - BLOB_FILTER_HEIGHT;
     		int col = (start_col + j < BLOB_FILTER_WIDTH) ? start_col + j : start_col + j - BLOB_FILTER_WIDTH;
-    		log_response_t window_val = window[row][col];
-            response += window_val * LOG_FILTER[i][j];
+    		//log_response_t window_val = window[row][col];
+    		if (window[row][col])
+    			response += LOG_FILTER[i][j];
         }
     }
 
