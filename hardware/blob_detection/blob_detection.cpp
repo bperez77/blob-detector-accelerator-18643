@@ -79,9 +79,7 @@ static const log_response_t LOG_FILTER[BLOB_FILTER_HEIGHT][BLOB_FILTER_WIDTH] = 
 blob_detection_t compute_blob_detection(monochrome_window_t window, int start_row, int start_col) {
 #pragma HLS INLINE
 
-    // FIXME: Test
-    // convolve two matrices
-	printf("Starting Blob Detection Computation:\n");
+
     log_response_t response = 0;
     for(int i = 0; i < BLOB_FILTER_HEIGHT ; i++){
     	for(int j = 0; j < BLOB_FILTER_WIDTH; j++){
@@ -91,7 +89,6 @@ blob_detection_t compute_blob_detection(monochrome_window_t window, int start_ro
             response += window_val * LOG_FILTER[i][j];
         }
     }
-    printf("Finished. Total Response: %0.8f, Detected: %d\n\n", response.to_float(), response>=LOG_RESPONSE_THRESHOLD);
     return response>=LOG_RESPONSE_THRESHOLD;
 }
 
@@ -106,7 +103,7 @@ void blob_detection(monochrome_stream_t& monochrome_stream,
         blob_detection_stream_t& blob_detection_stream) {
 #pragma HLS INLINE
 
-    // FIXME: Test
+
 
     // Declare a window object
     window_pipeline <monochrome_t, blob_detection_t, 1, 1, IMAGE_HEIGHT,
