@@ -36,53 +36,20 @@
 grayscale_t compute_downscale(grayscale_window_t window) {
 #pragma HLS INLINE
 
-    // TODO: Add in frational input support?
-    ap_int<16> sum = 0; // window size <= 64; int_max_8_bit = 0xFF; 0xFF * 64 is a 16-bit number 
-    ap_int<8> average = 0; // this will still be an 8-bit number because of the division 
+	// TODO: Add in fractional input support?
+    ap_int<16> sum = 0;
+    ap_int<8> average = 0;
     for (int i = 0; i < DOWNSCALE_FACTOR; i++){
-	for (int j = 0; j < DOWNSCALE_FACTOR; j++){
+    	for (int j = 0; j < DOWNSCALE_FACTOR; j++){
     		sum += window[i][j];
-	}
+    		//printf("sum = %d\n", sum.to_int());
+    	}
     } 
+    //printf("sum = %d\n", sum.to_int());
     average = sum / (DOWNSCALE_FACTOR * DOWNSCALE_FACTOR);
     return average;
 }
 
-/**
- * Converts the image represented by the grayscale stream into a smaller image
- * represented by the output stream.
- *
- * This is the sequential interface to the module.
- **/
-void downscale(grayscale_stream_t& grayscale_stream,
-        grayscale_stream_t& downscale_stream) {
-#pragma HLS INLINE
-
-    // TODO: Add in fractional support 
-    // Read in all pixels at once  
-    grayscale_t grayscale_pkt[DOWNSCALE_FACTOR][DOWNSCALE_FACTOR];
-    grayscale_axis_t downscale_stream_pkt;
-    for(int i = 0; i < IMAGE_HEIGHT; i+=DOWNSCALE_FACTOR){
-       	for(int j = 0; j < IMAGE_WIDTH; j+=DOWNSCALE_FACTOR){
-       		for(int i = 0; i < DOWNSCALE_FACTOR; i++){
-       			for(int j = 0; j < DOWNSCALE_FACTOR; j++){
-       				grayscale_pkt[i][j] = grayscale_stream.read().tdata;
-       			}
-       		}
-       		downscale_stream_pkt.tdata = compute_downscale(grayscale_pkt);
-       	}
-    }    
-
-
-    // Our transfers are always aligned, so set tkeep to -1, and assert
-    // tlast when we reach the last packet
-    downscale_stream_pkt.tkeep = -1;
-    downscale_stream_pkt.tlast = grayscale_pkt[DOWNSCALE_FACTOR-1][DOWNSCALE_FACTOR-1];
-
-    // Stream out the grayscale packet 
-    downscale_stream << downscale_stream_pkt;
-    return;
-}
 
 /*----------------------------------------------------------------------------
  * Top Function for Synthesis
@@ -99,6 +66,6 @@ void downscale_top(grayscale_stream_t& grayscale_stream,
 #pragma HLS INTERFACE axis port=grayscale_stream
 #pragma HLS INTERFACE axis port=downscale_stream
 
-    downscale(grayscale_stream, downscale_stream);
+    downscale<IMAGE_HEIGHT, IMAGE_WIDTH>(grayscale_stream, downscale_stream);
     return;
 }
