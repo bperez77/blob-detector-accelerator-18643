@@ -28,17 +28,8 @@
 #define log_err(msg, ...) printf("%s: %s: %d: Error: " msg, __FILE__, \
         __func__, __LINE__, ##__VA_ARGS__)
 
-// Shorten the clunky name for id defines for the AXI DMA devices
-static const int AXIDMA_ID = XPAR_IMAGE_DMA_DEVICE_ID;
-
-// The path to the SD card for the f_mount function
-static const TCHAR *SD_CARD_PATH = "0:/";
-
-/* The name of the image files. IMPORTANT: For any given file path, no component
- * (file/directory) of the path can exceed 8 characters (including the
- * extension). Also, the extension cannot exceed 3 characters. */
-static const TCHAR *IMAGE_PATH = "im.rgb";
-static const TCHAR *OUTPUT_IMAGE_PATH = "out.rgb";
+// Alias for an image containing 32-bit RGBA pixels
+typedef matrix<pixel, IMAGE_WIDTH, IMAGE_HEIGHT> input_image_t;
 
 // A structure representing an AXI DMA device, holds information about the IP
 typedef struct axidma {
@@ -52,6 +43,18 @@ typedef struct device_context {
     FATFS sd_card_fs;           // Handle the the SD card filesystem (FAT)
     axidma_t axidma;            // The AXI DMA device
 } devices_context_t;
+
+// Shorten the clunky name for id defines for the AXI DMA devices
+static const int AXIDMA_ID = XPAR_IMAGE_DMA_DEVICE_ID;
+
+// The path to the SD card for the f_mount function
+static const TCHAR *SD_CARD_PATH = "0:/";
+
+/* The name of the image files. IMPORTANT: For any given file path, no component
+ * (file/directory) of the path can exceed 8 characters (including the
+ * extension). Also, the extension cannot exceed 3 characters. */
+static const TCHAR *IMAGE_PATH = "im.rgb";
+static const TCHAR *OUTPUT_IMAGE_PATH = "out.rgb";
 
 /*----------------------------------------------------------------------------
  * Initialization
@@ -73,6 +76,12 @@ static int init_axidma(axidma_t& axidma, int device_id)
                 device_id);
         return rc;
     }
+
+    // Disable all DMA interrupts for both channels, as we're polling
+	XAxiDma_IntrDisable(&axidma.dev, XAXIDMA_IRQ_ALL_MASK,
+			XAXIDMA_DEVICE_TO_DMA);
+	XAxiDma_IntrDisable(&axidma.dev, XAXIDMA_IRQ_ALL_MASK,
+						XAXIDMA_DMA_TO_DEVICE);
 
     return XST_SUCCESS;
 }
@@ -100,7 +109,7 @@ static int init_devices(devices_context_t& devices)
  * File I/O Handling
  *----------------------------------------------------------------------------*/
 
-static int open_image(const char *image_path, image_t& image)
+static int open_image(const TCHAR *image_path, image_t& image)
 {
     // Try to open the specified image file
     FIL file;
@@ -137,12 +146,12 @@ static int open_image(const char *image_path, image_t& image)
     return XST_SUCCESS;
 }
 
-static int save_image(const char *image_path, image_t& image)
+static int save_image(const TCHAR *image_path, const image_t& image)
 {
     // Try to open the specified output file
     FIL file;
     int rc = f_open(&file, image_path, FA_CREATE_ALWAYS|FA_WRITE);
-    if (rc < 0) {
+    if (rc != FR_OK) {
         log_err("%s: Unable to open output image file.\n", image_path);
         return rc;
     }
@@ -150,7 +159,7 @@ static int save_image(const char *image_path, image_t& image)
     // Write the entire image to the file, and verify that it was successful
     size_t bytes_written;
     rc = f_write(&file, image.buffer, image.size(), &bytes_written);
-    if (rc < 0) {
+    if (rc != FR_OK) {
         log_err("%s: Unable to write output image to file.\n", image_path);
         return rc;
     } else if (bytes_written != image.size()) {
@@ -162,7 +171,7 @@ static int save_image(const char *image_path, image_t& image)
 
     // Close the output file
     rc = f_close(&file);
-    if (rc < 0) {
+    if (rc != FR_OK) {
         log_err("%s: Unable to close output image file.\n", image_path);
         return rc;
     }
@@ -170,21 +179,51 @@ static int save_image(const char *image_path, image_t& image)
     return XST_SUCCESS;
 }
 
-
 /*----------------------------------------------------------------------------
  * Main Application
  *----------------------------------------------------------------------------*/
 
 // Declare the image, allocating room for its buffer (stack is too small)
 static image_t TEST_IMAGE;
+static image_t OUTPUT_IMAGE;
+
+static int send_image(axidma_t& axidma, const image_t& image,
+		image_t& output_image)
+{
+	// Get a handle to the AXI DMA device
+	XAxiDma* dma_dev = &axidma.dev;
+
+	// Initiate the transfer to send the image to the FPGA
+	int rc = XAxiDma_SimpleTransfer(dma_dev, (u32)image.buffer, image.size(),
+			XAXIDMA_DMA_TO_DEVICE);
+	if (rc < 0) {
+		log_err("Unable to start image transfer over AXI DMA to the FPGA.\n");
+		return rc;
+	}
+
+	// Initiate the transfer to receive the output image from the FPGA
+	rc = XAxiDma_SimpleTransfer(dma_dev, (u32)output_image.buffer,
+			output_image.size(), XAXIDMA_DEVICE_TO_DMA);
+	if (rc < 0) {
+		log_err("Unable to start image transfer over AXI DMA from the FPGA.\n");
+		return rc;
+	}
+
+	/* Wait for both the transfers to complete. We really only need to wait on the
+	 * receive transfer, as it depends on the transmit transfer. */
+	while (XAxiDma_Busy(dma_dev, XAXIDMA_DMA_TO_DEVICE) &&
+			XAxiDma_Busy(dma_dev, XAXIDMA_DEVICE_TO_DMA));
+
+	return 0;
+}
 
 int main()
 {
-    printf("Blob Detector Accelerator\n");
-    printf("-------------------------\n\n");
+    printf("\nBlob Detector Accelerator\n");
+    printf("-------------------------\n");
 
     // Initialize the system, namely the SD card and AXI DMA
-    printf("Mounting the SD card and initializing AXI DMA devices...\n");
+    printf("\tMounting the SD card and initializing AXI DMA devices...\n");
     devices_context_t devices_context;
     int rc = init_devices(devices_context);
     if (rc != XST_SUCCESS) {
@@ -192,16 +231,25 @@ int main()
     }
 
     // Open the image file, and load it into memory
-    printf("Opening the image file '%s'...\n", IMAGE_PATH);
+    printf("\tOpening the image file '%s'...\n", IMAGE_PATH);
     image_t& image = TEST_IMAGE;
     rc = open_image(IMAGE_PATH, image);
     if (rc != XST_SUCCESS) {
         return rc;
     }
 
+    /* Use the hardware on the FPGA to perfrom an operation on the image,
+     * sending it out, and receiving a new output image. */
+    printf("\tTransferring the image over the fabric...\n");
+    image_t& output_image = OUTPUT_IMAGE;
+    rc = send_image(devices_context.axidma, image, output_image);
+    if (rc < 0) {
+    	return rc;
+    }
+
     // Save the image file
-    printf("Saving the image to file '%s'...\n", OUTPUT_IMAGE_PATH);
-    rc = save_image(OUTPUT_IMAGE_PATH, image);
+    printf("\tSaving the image to file '%s'...\n", OUTPUT_IMAGE_PATH);
+    rc = save_image(OUTPUT_IMAGE_PATH, output_image);
     if (rc < 0) {
         return rc;
     }
