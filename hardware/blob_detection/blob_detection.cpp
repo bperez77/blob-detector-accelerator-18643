@@ -83,12 +83,13 @@ blob_detection_t compute_blob_detection(monochrome_window_t window, int start_ro
     log_response_t response = 0;
     for(int i = 0; i < BLOB_FILTER_HEIGHT ; i++){
     	for(int j = 0; j < BLOB_FILTER_WIDTH; j++){
-    		int row = (start_row + i) % BLOB_FILTER_HEIGHT;
-    		int col = (start_col + j) % BLOB_FILTER_WIDTH;
+    		int row = (start_row + i < BLOB_FILTER_HEIGHT) ? start_row + i : start_row + i - BLOB_FILTER_HEIGHT;
+    		int col = (start_col + j < BLOB_FILTER_WIDTH) ? start_col + j : start_col + j - BLOB_FILTER_WIDTH;
     		log_response_t window_val = window[row][col];
             response += window_val * LOG_FILTER[i][j];
         }
     }
+
     return response>=LOG_RESPONSE_THRESHOLD;
 }
 
@@ -109,10 +110,6 @@ void blob_detection(monochrome_stream_t& monochrome_stream,
     window_pipeline <monochrome_t, blob_detection_t, 1, 1, IMAGE_HEIGHT,
             IMAGE_WIDTH, BLOB_FILTER_HEIGHT, BLOB_FILTER_WIDTH,
             compute_blob_detection> w;
-
-    for (int i = 0; i < BLOB_FILTER_HEIGHT*BLOB_FILTER_WIDTH; i++) {
-    	printf("LoG filer: %0.8f\n", LOG_FILTER[0][i].to_float());
-    }
 
     // Apply this operation
     w.window_op(monochrome_stream, blob_detection_stream);

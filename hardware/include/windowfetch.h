@@ -74,7 +74,9 @@ public:
 
     	IN_T rowbuffer[KERNEL_HEIGHT][IMAGE_WIDTH];
     	IN_T window[KERNEL_HEIGHT][KERNEL_WIDTH];
-#pragma HLS ARRAY_PARTITION variable=window complete dim=0
+#pragma HLS DEPENDENCE variable=rowbuffer inter RAW false
+#pragma HLS DEPENDENCE variable=window inter RAW false
+#pragma HLS ARRAY_PARTITION variable=window complete
 
     	pixel_op: for (int in_pointer = 0; in_pointer < IMAGE_WIDTH * IMAGE_HEIGHT + offset; in_pointer++) {
 #pragma HLS PIPELINE
