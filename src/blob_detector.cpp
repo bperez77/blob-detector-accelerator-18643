@@ -34,10 +34,11 @@ static const int AXIDMA_ID = XPAR_IMAGE_DMA_DEVICE_ID;
 // The path to the SD card for the f_mount function
 static const TCHAR *SD_CARD_PATH = "0:/";
 
-/* The name of the image file. IMPORTANT: For any given file path, no component
- * (file/directory) of the path can exceed 8 characters (including the extension).
- * Also, the extension cannot exceed 3 characters. */
-static const TCHAR *IMAGE_FILE_PATH = "im.rgb";
+/* The name of the image files. IMPORTANT: For any given file path, no component
+ * (file/directory) of the path can exceed 8 characters (including the
+ * extension). Also, the extension cannot exceed 3 characters. */
+static const TCHAR *IMAGE_PATH = "im.rgb";
+static const TCHAR *OUTPUT_IMAGE_PATH = "out.rgb";
 
 // A structure representing an AXI DMA device, holds information about the IP
 typedef struct axidma {
@@ -99,22 +100,21 @@ static int init_devices(devices_context_t& devices)
  * File I/O Handling
  *----------------------------------------------------------------------------*/
 
-extern FRESULT follow_path (DIR* dp, const TCHAR* path);
-
 static int open_image(const char *image_path, image_t& image)
 {
     // Try to open the specified image file
     FIL file;
     int rc = f_open(&file, image_path, FA_READ);
     if (rc != FR_OK) {
-        log_err("%s: Unable to open image file.\n", image_path);
+        log_err("%s: Unable to open input image file.\n", image_path);
         return rc;
     }
 
     // Check that the file is the expected size
     if (file.fsize != image.size()) {
-        log_err("%s: File size does not match image's. Expected %u bytes, but "
-                "the file size is %lu.\n", image_path, image.size(), file.fsize);
+        log_err("%s: File size does not match input image's. Expected %u "
+                "bytes, but the file size is %lu.\n", image_path, image.size(),
+                file.fsize);
         return XST_BUFFER_TOO_SMALL;
     }
 
@@ -123,14 +123,47 @@ static int open_image(const char *image_path, image_t& image)
     rc = f_read(&file, image.buffer, image.size(), &bytes_read);
     assert(bytes_read == image.size());
     if (rc != FR_OK) {
-        log_err("%s: Unable to read file.\n", image_path);
+        log_err("%s: Unable to read input image.\n", image_path);
         return rc;
     }
 
     // Close the file
     rc = f_close(&file);
     if (rc != FR_OK) {
-        log_err("%s: Unable to close file.\n", image_path);
+        log_err("%s: Unable to close input image.\n", image_path);
+        return rc;
+    }
+
+    return XST_SUCCESS;
+}
+
+static int save_image(const char *image_path, image_t& image)
+{
+    // Try to open the specified output file
+    FIL file;
+    int rc = f_open(&file, image_path, FA_CREATE_ALWAYS|FA_WRITE);
+    if (rc < 0) {
+        log_err("%s: Unable to open output image file.\n", image_path);
+        return rc;
+    }
+
+    // Write the entire image to the file, and verify that it was successful
+    size_t bytes_written;
+    rc = f_write(&file, image.buffer, image.size(), &bytes_written);
+    if (rc < 0) {
+        log_err("%s: Unable to write output image to file.\n", image_path);
+        return rc;
+    } else if (bytes_written != image.size()) {
+        log_err("%s: File size does not match output image's. Expected %u "
+                "bytes, but the file size is %lu.\n", image_path, image.size(),
+                file.fsize);
+        return XST_BUFFER_TOO_SMALL;
+    }
+
+    // Close the output file
+    rc = f_close(&file);
+    if (rc < 0) {
+        log_err("%s: Unable to close output image file.\n", image_path);
         return rc;
     }
 
@@ -159,11 +192,20 @@ int main()
     }
 
     // Open the image file, and load it into memory
+    printf("Opening the image file '%s'...\n", IMAGE_PATH);
     image_t& image = TEST_IMAGE;
-    rc = open_image(IMAGE_FILE_PATH, image);
+    rc = open_image(IMAGE_PATH, image);
     if (rc != XST_SUCCESS) {
         return rc;
     }
 
+    // Save the image file
+    printf("Saving the image to file '%s'...\n", OUTPUT_IMAGE_PATH);
+    rc = save_image(OUTPUT_IMAGE_PATH, image);
+    if (rc < 0) {
+        return rc;
+    }
+
+    printf("Success\n");
     return 0;
 }
