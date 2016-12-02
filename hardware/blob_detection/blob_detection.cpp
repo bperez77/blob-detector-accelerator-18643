@@ -32,21 +32,22 @@
  * The fractional precision used for the LoG computation. This determines how
  * many bits are used for the fractional part of the fixed point representation.
  **/
-static const int LOG_FRACTIONAL_BITS = 7;
+static const int LOG_NUM_BITS	  = 16;
+static const int LOG_INTEGER_BITS = 2;
 
 /**
  * The type of an LoG response. This is a fixed point value with 1 bit for the
  * integer part, and LOG_FRACTIONAL_BITS bits for the fractional part. As all
  * the monochrome values are either 0 or 1, we only need 1 integral bit.
  **/
-typedef ap_fixed<LOG_FRACTIONAL_BITS+1, LOG_FRACTIONAL_BITS> log_response_t;
+typedef ap_fixed<LOG_NUM_BITS, LOG_INTEGER_BITS> log_response_t;
 
 /**
  * The threshold value used to determine if an LoG response corresponds to a
  * blob detection. If the response is greater than or equal to the threshold,
  * it becomes 1, otherwise, it becomes 0.
  **/
-static const log_response_t LOG_RESPONSE_THRESHOLD = 0.492 * 1.0;
+static const log_response_t LOG_RESPONSE_THRESHOLD = 0.490 * 1.0; //Originally .492
 
 /**
  * The LoG filter kernel used to determine the LoG response for a window of the
@@ -80,15 +81,17 @@ blob_detection_t compute_blob_detection(monochrome_window_t window, int start_ro
 
     // FIXME: Test
     // convolve two matrices
+	printf("Starting Blob Detection Computation:\n");
     log_response_t response = 0;
     for(int i = 0; i < BLOB_FILTER_HEIGHT ; i++){
     	for(int j = 0; j < BLOB_FILTER_WIDTH; j++){
     		int row = (start_row + i) % BLOB_FILTER_HEIGHT;
     		int col = (start_col + j) % BLOB_FILTER_WIDTH;
-            response += window[row][col] * LOG_FILTER[row][col];
+    		log_response_t window_val = window[row][col];
+            response += window_val * LOG_FILTER[i][j];
         }
     }
-
+    printf("Finished. Total Response: %0.8f, Detected: %d\n\n", response.to_float(), response>=LOG_RESPONSE_THRESHOLD);
     return response>=LOG_RESPONSE_THRESHOLD;
 }
 
@@ -109,6 +112,10 @@ void blob_detection(monochrome_stream_t& monochrome_stream,
     window_pipeline <monochrome_t, blob_detection_t, 1, 1, IMAGE_HEIGHT,
             IMAGE_WIDTH, BLOB_FILTER_HEIGHT, BLOB_FILTER_WIDTH,
             compute_blob_detection> w;
+
+    for (int i = 0; i < BLOB_FILTER_HEIGHT*BLOB_FILTER_WIDTH; i++) {
+    	printf("LoG filer: %0.8f\n", LOG_FILTER[0][i].to_float());
+    }
 
     // Apply this operation
     w.window_op(monochrome_stream, blob_detection_stream);
