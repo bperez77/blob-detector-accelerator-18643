@@ -78,7 +78,6 @@ static const log_response_t LOG_FILTER[BLOB_FILTER_HEIGHT][BLOB_FILTER_WIDTH] = 
 blob_detection_t compute_blob_detection(monochrome_window_t window, int start_row, int start_col) {
 #pragma HLS INLINE
 
-
     log_response_t response = 0;
     for(int i = 0; i < BLOB_FILTER_HEIGHT ; i++){
         for(int j = 0; j < BLOB_FILTER_WIDTH; j++){

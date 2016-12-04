@@ -44,16 +44,22 @@ static const int IMAGE_HEIGHT4 = IMAGE_HEIGHT3 / DOWNSCALE_FACTOR;
  * Helper Functions
  *----------------------------------------------------------------------------*/
 
-template <typename T>
+template <typename T, int IMAGE_WIDTH, int IMAGE_HEIGHT>
 void duplicate_stream(hls::stream<T>& input, hls::stream<T>& output1,
         hls::stream<T>& output2) {
 #pragma HLS INLINE
-#pragma HLS DATAFLOW
 
-    // Send the next value to both output streams
-    T in_pkt = input.read();
-    output1.write(in_pkt);
-    output2.write(in_pkt);
+    // While the stream is not empty, send the next packet to both outputs
+    for (int row = 0; row < IMAGE_HEIGHT; row++) {
+        for (int col = 0; col < IMAGE_WIDTH; col++) {
+        #pragma HLS PIPELINE II=1
+
+            T in_pkt = input.read();
+            output1.write(in_pkt);
+            output2.write(in_pkt);
+        }
+    }
+
     return;
 }
 
@@ -69,7 +75,8 @@ static void downscale_image(grayscale_stream_t& image,
     // Downscale the image, and duplicate the stream
     grayscale_stream_t downscaled_image;
     downscale<IMAGE_WIDTH, IMAGE_HEIGHT>(image, downscaled_image);
-    duplicate_stream(downscaled_image, downscaled1, downscaled2);
+    duplicate_stream<grayscale_axis_t, IMAGE_WIDTH, IMAGE_HEIGHT>(
+            downscaled_image, downscaled1, downscaled2);
     return;
 }
 
@@ -97,14 +104,15 @@ void blob_detector(pixel_stream_t& rgba_image,
 #pragma HLS INTERFACE axis port=blob_mask2
 #pragma HLS INTERFACE axis port=blob_mask3
 #pragma HLS INTERFACE axis port=blob_mask4
-#pragma HLS INTERFACE ap_none port=return
+#pragma HLS INTERFACE ap_ctrl_none port=return
 
 #pragma HLS DATAFLOW
 
     // Convert the image to grayscale, and duplicate the stream
     grayscale_stream_t gray_image, gray_image1, gray_image2;
     grayscale(rgba_image, gray_image);
-    duplicate_stream(gray_image, gray_image1, gray_image2);
+    duplicate_stream<grayscale_axis_t, IMAGE_WIDTH, IMAGE_HEIGHT>(gray_image,
+            gray_image1, gray_image2);
 
     // Downscale the image for all 5 scale levels, producing duplicate streams
     grayscale_stream_t level1_image1, level1_image2, level2_image1;
