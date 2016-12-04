@@ -4,7 +4,7 @@
  * @author Brandon Perez (bmperez)
  * @author Devon White (dww)
  * @author Yiyi Zhang (yiyiz)
- * 
+ *
  * This file contains the implementation of the downscale module.
  *
  * The grayscale module simply takes a 32-bit input stream, consisting
@@ -40,10 +40,10 @@ grayscale_t compute_downscale(grayscale_window_t window) {
     ap_int<16> sum = 0;
     ap_int<8> average = 0;
     for (int i = 0; i < DOWNSCALE_FACTOR; i++){
-    	for (int j = 0; j < DOWNSCALE_FACTOR; j++){
-    		sum += window[i][j];
-    	}
-    } 
+        for (int j = 0; j < DOWNSCALE_FACTOR; j++){
+            sum += window[i][j];
+        }
+    }
     average = sum / (DOWNSCALE_FACTOR * DOWNSCALE_FACTOR);
     return average;
 }

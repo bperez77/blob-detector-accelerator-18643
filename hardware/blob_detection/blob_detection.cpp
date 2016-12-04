@@ -32,7 +32,7 @@
  * The fractional precision used for the LoG computation. This determines how
  * many bits are used for the fractional part of the fixed point representation.
  **/
-static const int LOG_NUM_BITS	  = 16;
+static const int LOG_NUM_BITS     = 16;
 static const int LOG_INTEGER_BITS = 2;
 
 /**
@@ -75,47 +75,22 @@ static const log_response_t LOG_FILTER[BLOB_FILTER_HEIGHT][BLOB_FILTER_WIDTH] = 
  * @param[in] window A window of monochrome values from an image.
  * @return 1 if the window corresponds to a blob, 0 otherwise.
  **/
-
 blob_detection_t compute_blob_detection(monochrome_window_t window, int start_row, int start_col) {
 #pragma HLS INLINE
 
 
     log_response_t response = 0;
     for(int i = 0; i < BLOB_FILTER_HEIGHT ; i++){
-    	for(int j = 0; j < BLOB_FILTER_WIDTH; j++){
-    		int row = (start_row + i < BLOB_FILTER_HEIGHT) ? start_row + i : start_row + i - BLOB_FILTER_HEIGHT;
-    		int col = (start_col + j < BLOB_FILTER_WIDTH) ? start_col + j : start_col + j - BLOB_FILTER_WIDTH;
-    		//log_response_t window_val = window[row][col];
-    		if (window[row][col])
-    			response += LOG_FILTER[i][j];
+        for(int j = 0; j < BLOB_FILTER_WIDTH; j++){
+            int row = (start_row + i < BLOB_FILTER_HEIGHT) ? start_row + i : start_row + i - BLOB_FILTER_HEIGHT;
+            int col = (start_col + j < BLOB_FILTER_WIDTH) ? start_col + j : start_col + j - BLOB_FILTER_WIDTH;
+            //log_response_t window_val = window[row][col];
+            if (window[row][col])
+                response += LOG_FILTER[i][j];
         }
     }
 
     return response>=LOG_RESPONSE_THRESHOLD;
-}
-
-/**
- * Converts the monochrome stream into a stream of blob detections.
- *
- * The blob detections are binary values that indicate if the pixel is the
- * center point of a detected blob. This is the sequential interface to the
- * module.
- **/
-void blob_detection(monochrome_stream_t& monochrome_stream,
-        blob_detection_stream_t& blob_detection_stream) {
-#pragma HLS INLINE
-
-
-
-    // Declare a window object
-    window_pipeline <monochrome_t, blob_detection_t, 1, 1, IMAGE_HEIGHT,
-            IMAGE_WIDTH, BLOB_FILTER_HEIGHT, BLOB_FILTER_WIDTH,
-            compute_blob_detection> w;
-
-    // Apply this operation
-    w.window_op(monochrome_stream, blob_detection_stream);
-
-    return;
 }
 
 /*----------------------------------------------------------------------------
@@ -134,7 +109,7 @@ void blob_detection_top(monochrome_stream_t& monochrome_stream,
 #pragma HLS INTERFACE axis port=monochrome_stream
 #pragma HLS INTERFACE axis port=blob_detection_stream
 
-    blob_detection(monochrome_stream,
-    		blob_detection_stream);
+    blob_detection<IMAGE_WIDTH, IMAGE_HEIGHT>(monochrome_stream,
+            blob_detection_stream);
     return;
 }

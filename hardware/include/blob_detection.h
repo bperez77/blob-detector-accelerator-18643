@@ -22,6 +22,7 @@
 
 #include "axis.h"                   // Definition of the AXIS protocol structure
 #include "monochrome.h"             // Definition of the monochrome types
+#include "windowfetch.h"            // The window operation pipeline
 
 /*----------------------------------------------------------------------------
  * Definitions
@@ -80,7 +81,19 @@ blob_detection_t compute_blob_detection(monochrome_window_t window,
  * @param[in] monochrome_stream The input stream of monochrome values.
  * @param[out] blob_detection_stream The output stream of LoG detections.
  **/
+template <int IMAGE_WIDTH, int IMAGE_HEIGHT>
 void blob_detection(monochrome_stream_t& monochrome_stream,
-        blob_detection_stream_t& blob_detection_stream);
+        blob_detection_stream_t& blob_detection_stream) {
+#pragma HLS INLINE
+
+    // Declare a window object
+    window_pipeline<monochrome_t, blob_detection_t, 1, 1, IMAGE_HEIGHT,
+            IMAGE_WIDTH, BLOB_FILTER_HEIGHT, BLOB_FILTER_WIDTH,
+            compute_blob_detection> w;
+
+    // Apply the LoG operation
+    w.window_op(monochrome_stream, blob_detection_stream);
+    return;
+}
 
 #endif /* BLOB_DETECTION_H_ */

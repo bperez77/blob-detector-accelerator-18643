@@ -11,7 +11,7 @@
 #ifndef WINDOW_FETCH_H_
 #define WINDOW_FETCH_H_
 
-//Add #define here 
+//Add #define here
 
 
 #include <hls_stream.h>         // Definition of the stream class
@@ -23,13 +23,13 @@ const int MAX_KERNEL_DIM = 5; //log2, so max 31x32 kernel
 
 //const window_f sum_window;
 
-//IN_STREAM_T should be a wrapper of IN_T 
+//IN_STREAM_T should be a wrapper of IN_T
 //OUT_STREAM_T should be a wrapper of OUT_T
 template <typename IN_T, typename OUT_T, size_t IN_T_BITS, size_t OUT_T_BITS,
           int IMAGE_HEIGHT, int IMAGE_WIDTH, int KERNEL_HEIGHT, int KERNEL_WIDTH,
           OUT_T (*window_f)(IN_T window[KERNEL_HEIGHT][KERNEL_WIDTH], int start_row, int start_col)>
 struct window_pipeline {
-    
+
 
     //typedef OUT_T (*window_f)(IN_T window[KERNEL_HEIGHT][KERNEL_WIDTH]);
     //const window_f window_function;
@@ -39,7 +39,7 @@ struct window_pipeline {
     ap_uint<MAX_WINDOW_DIM> tail_col; //The col we store into -- equal to head_col
     ap_uint<1> init_row; //Are we doing the first row for the first time
 
-    //window idx 
+    //window idx
     ap_uint<MAX_KERNEL_DIM> head_win;
     ap_uint<MAX_KERNEL_DIM> tail_win;
 
@@ -61,7 +61,7 @@ public:
     typedef axis<OUT_T, OUT_T_BITS> out_pkt_t;
     typedef hls::stream<out_pkt_t> out_stream_t;
 
-    // window operation 
+    // window operation
     void window_op(in_stream_t& in_stream, out_stream_t& out_stream)
     {
 #pragma HLS_INLINE
@@ -138,7 +138,7 @@ public:
 
 
      // helper functions
-     void update_tail(){ 
+     void update_tail(){
         if ((tail_col + 1) == IMAGE_WIDTH){
              //update row
              tail_row = (tail_row + 1 == KERNEL_HEIGHT) ? 0 : tail_row.to_int() + 1;

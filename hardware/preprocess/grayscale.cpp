@@ -46,8 +46,7 @@ grayscale_t compute_grayscale(const pixel_t& pixel) {
  * This is the sequential interface to the module.
  **/
 void grayscale(pixel_stream_t& pixel_stream,
-		grayscale_stream_t& grayscale_mono_stream,
-		grayscale_stream_t& grayscale_down_stream) {
+        grayscale_stream_t& grayscale_stream) {
 #pragma HLS INLINE
 
     // Read in the next image pixel packet
@@ -64,8 +63,7 @@ void grayscale(pixel_stream_t& pixel_stream,
     grayscale_axis_pkt.tlast = pixel_axis_pkt.tlast;
 
     // Stream out the grayscale packet
-    grayscale_mono_stream << grayscale_axis_pkt;
-    grayscale_down_stream << grayscale_axis_pkt;
+    grayscale_stream << grayscale_axis_pkt;
     return;
 }
 
@@ -80,15 +78,13 @@ void grayscale(pixel_stream_t& pixel_stream,
  * synthesized into its own IP block.
  **/
 void grayscale_top(pixel_stream_t& pixel_stream,
-        grayscale_stream_t& grayscale_mono_stream,
-        grayscale_stream_t& grayscale_down_stream) {
+        grayscale_stream_t& grayscale_stream) {
 #pragma HLS INTERFACE axis port=pixel_stream
-#pragma HLS INTERFACE axis port=grayscale_mono_stream
-#pragma HLS INTERFACE axis port=grayscale_down_stream
+#pragma HLS INTERFACE axis port=grayscale_stream
 
 #pragma HLS PIPELINE II=1 rewind
 
     // Instantiate the grayscale module
-    grayscale(pixel_stream, grayscale_mono_stream, grayscale_down_stream);
+    grayscale(pixel_stream, grayscale_stream);
     return;
 }
