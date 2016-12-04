@@ -20,4 +20,4 @@ input_image=$1
 output_image=$2
 
 # Convert the input image to 8-bit RGBA image
-convert -format rgba -depth 8 ${input_image} ${output_image}
+convert -depth 8 ${input_image} rgba:${output_image}

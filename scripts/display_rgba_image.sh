@@ -21,4 +21,4 @@ height=$2
 image=$3
 
 # Display the image, indicating that its format is raw RGBA
-display -format rgba -depth 8 -size ${width}x${height} ${image}
+display -depth 8 -size ${width}x${height} rgba:${image}
