@@ -65,6 +65,7 @@ grayscale_t compute_grayscale(const pixel_t& pixel);
  * @param[out] grayscale_stream The output stream of grayscale values
  **/
 void grayscale(pixel_stream_t& pixel_stream,
-        grayscale_stream_t& grayscale_stream);
+        grayscale_stream_t& grayscale_mono_stream,
+        grayscale_stream_t& grayscale_down_stream);
 
 #endif /* GRAYSCALE_H_ */

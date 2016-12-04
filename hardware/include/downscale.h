@@ -24,7 +24,7 @@
  * The amount that the image is scaled down by at each scale level, in each
  * dimension. For example, a WxH would become(W/FACTOR)x(H/FACTOR) image.
  **/
-static const int DOWNSCALE_FACTOR = 5;
+static const int DOWNSCALE_FACTOR = 2;
 
 /**
  * A convenient alias for the window of grayscale values matching the size of
