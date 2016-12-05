@@ -67,6 +67,10 @@ static const int NUM_SCALES     = 5;
  * simply so that HLS can provide a timing estimate. */
 static const int MAX_BBOXES     = 100;
 
+/* To increase throughput, the image image is split into 4 sections
+ * horizontally (row-wise), and this module is instantiated 4 times. */
+static const int IMAGE_SPLITS 	= 4;
+
 // Enumeration of the factors of each scale level
 static const int SCALE0         = 1;
 static const int SCALE1         = SCALE0 * DOWNSCALE_FACTOR;
@@ -82,11 +86,12 @@ static const int IMAGE_WIDTH3   = IMAGE_WIDTH / SCALE3;
 static const int IMAGE_WIDTH4   = IMAGE_WIDTH / SCALE4;
 
 // Enumeration of the image heights at each scale level
-static const int IMAGE_HEIGHT0  = IMAGE_HEIGHT / SCALE0;
-static const int IMAGE_HEIGHT1  = IMAGE_HEIGHT / SCALE1;
-static const int IMAGE_HEIGHT2  = IMAGE_HEIGHT / SCALE2;
-static const int IMAGE_HEIGHT3  = IMAGE_HEIGHT / SCALE3;
-static const int IMAGE_HEIGHT4  = IMAGE_HEIGHT / SCALE4;
+static const int IMAGE_HSECTION	= IMAGE_HEIGHT / IMAGE_SPLITS;
+static const int IMAGE_HEIGHT0  = IMAGE_HSECTION / SCALE0;
+static const int IMAGE_HEIGHT1  = IMAGE_HSECTION / SCALE1;
+static const int IMAGE_HEIGHT2  = IMAGE_HSECTION / SCALE2;
+static const int IMAGE_HEIGHT3  = IMAGE_HSECTION / SCALE3;
+static const int IMAGE_HEIGHT4  = IMAGE_HSECTION / SCALE4;
 
 /*----------------------------------------------------------------------------
  * Helper Functions
