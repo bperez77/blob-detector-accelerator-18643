@@ -29,7 +29,7 @@ static const int IMAGE_HEIGHT               = 1080;
 #else
 static const int IMAGE_WIDTH                = 32;
 static const int IMAGE_HEIGHT               = 32;
-#endif /* BLOB_DETECTION_DEBUG */
+#endif /* __SYNTHESIS__ */
 
 /**
  * The number of bits needed to represent a color channel in the image.

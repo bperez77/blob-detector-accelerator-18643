@@ -26,6 +26,15 @@ struct axis {
     T tdata;                                // The data of the packet
     ap_uint<bits_to_bytes(T_BITS)> tkeep;   // Which bytes of the data are valid
     ap_uint<1> tlast;                       // Indicates the last packet
+
+    // Default constructor
+    axis() {}
+
+    axis(T tdata, ap_uint<1> tlast, ap_uint<bits_to_bytes(T_BITS)> tkeep=-1) {
+        this->tdata = tdata;
+        this->tlast = tlast;
+        this->tkeep = tkeep;
+    }
 };
 
 #endif /* AXIS_H_ */

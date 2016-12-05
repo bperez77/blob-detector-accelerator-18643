@@ -14,31 +14,79 @@
  * @bug No known bugs.
  **/
 
-#include "monochrome.h"             // Definition of the monochrome types
-#include "blob_detection.h"         // Our interface and blob detection types
-#include "image.h"                  // Definition of image info
-#include "grayscale.h"              // Definition of grayscale info
-#include "downscale.h"              // Definition of downscale
+#include "monochrome.h"         // Definition of the monochrome types
+#include "blob_detection.h"     // Our interface and blob detection types
+#include "image.h"              // Definition of image info
+#include "grayscale.h"          // Definition of grayscale info
+#include "downscale.h"          // Definition of downscale
 
 /*----------------------------------------------------------------------------
  * Internal Definitions
  *----------------------------------------------------------------------------*/
 
+// The type used to represent a coordinate in the image
+typedef ap_int<16> coord_t;
+
+/* The data sent back to the processor, a list of bounding boxes, (x,y) points,
+ * in the image where the blobs have been detected. The list is terminated with
+ * the point (-1, -1, -1, -1). */
+typedef struct bounding_box {
+
+private:
+    ap_int<64> coords;             // (x1, y1), (x2, y2) coordainte
+
+public:
+    // Default constructor
+    bounding_box() {}
+
+    // Constructor from four points
+    bounding_box(coord_t& x1, coord_t& y1, coord_t& x2, coord_t& y2) {
+    #pragma HLS INLINE
+
+        this->coords = (y2 << 48) | (x2 << 32) | (y1 << 16) | x1;
+    }
+
+    // Constructor from points a centerpoint and radius
+    bounding_box(coord_t& cx, coord_t& cy, coord_t& radius) {
+    #pragma HLS INLINE
+
+        this->coords = ((cy + radius) << 48) | ((cx + radius) << 32) |
+                ((cy - radius) << 16) | (cx - radius);
+    }
+} bbox_t;
+
+// Definition of the packet and stream types for bounding boxes
+typedef axis<bbox_t, 64> bbox_axis_t;
+typedef hls::stream<bbox_axis_t> bbox_stream_t;
+
 /* Unfortunately, there's no equivalent of a generate (compile-time) loop in
  * C++, so we manually enumerate the image sizes for each level. */
-static const int NUM_SCALES         = 5;
+static const int NUM_SCALES     = 5;
+
+/* The maximum number of permitted bounding boxes in the image. This is done
+ * simply so that HLS can provide a timing estimate. */
+static const int MAX_BBOXES     = 100;
+
+// Enumeration of the factors of each scale level
+static const int SCALE0         = 1;
+static const int SCALE1         = SCALE0 * DOWNSCALE_FACTOR;
+static const int SCALE2         = SCALE1 * DOWNSCALE_FACTOR;
+static const int SCALE3         = SCALE2 * DOWNSCALE_FACTOR;
+static const int SCALE4         = SCALE3 * DOWNSCALE_FACTOR;
 
 // Enumeration of the image widths at each scale level
-static const int IMAGE_WIDTH1 = IMAGE_WIDTH / DOWNSCALE_FACTOR;
-static const int IMAGE_WIDTH2 = IMAGE_WIDTH1 / DOWNSCALE_FACTOR;
-static const int IMAGE_WIDTH3 = IMAGE_WIDTH2 / DOWNSCALE_FACTOR;
-static const int IMAGE_WIDTH4 = IMAGE_WIDTH3 / DOWNSCALE_FACTOR;
+static const int IMAGE_WIDTH0   = IMAGE_WIDTH / SCALE0;
+static const int IMAGE_WIDTH1   = IMAGE_WIDTH / SCALE1;
+static const int IMAGE_WIDTH2   = IMAGE_WIDTH / SCALE2;
+static const int IMAGE_WIDTH3   = IMAGE_WIDTH / SCALE3;
+static const int IMAGE_WIDTH4   = IMAGE_WIDTH / SCALE4;
 
 // Enumeration of the image heights at each scale level
-static const int IMAGE_HEIGHT1 = IMAGE_HEIGHT / DOWNSCALE_FACTOR;
-static const int IMAGE_HEIGHT2 = IMAGE_HEIGHT1 / DOWNSCALE_FACTOR;
-static const int IMAGE_HEIGHT3 = IMAGE_HEIGHT2 / DOWNSCALE_FACTOR;
-static const int IMAGE_HEIGHT4 = IMAGE_HEIGHT3 / DOWNSCALE_FACTOR;
+static const int IMAGE_HEIGHT0  = IMAGE_HEIGHT / SCALE0;
+static const int IMAGE_HEIGHT1  = IMAGE_HEIGHT / SCALE1;
+static const int IMAGE_HEIGHT2  = IMAGE_HEIGHT / SCALE2;
+static const int IMAGE_HEIGHT3  = IMAGE_HEIGHT / SCALE3;
+static const int IMAGE_HEIGHT4  = IMAGE_HEIGHT / SCALE4;
 
 /*----------------------------------------------------------------------------
  * Helper Functions
@@ -50,16 +98,42 @@ void duplicate_stream(hls::stream<T>& input, hls::stream<T>& output1,
 #pragma HLS INLINE
 
     // While the stream is not empty, send the next packet to both outputs
-    for (int row = 0; row < IMAGE_HEIGHT; row++) {
-        for (int col = 0; col < IMAGE_WIDTH; col++) {
+    dup_row_loop: for (int row = 0; row < IMAGE_HEIGHT; row++) {
+        dup_col_loop: for (int col = 0; col < IMAGE_WIDTH; col++) {
         #pragma HLS PIPELINE II=1
 
-            T in_pkt = input.read();
+            const T& in_pkt = input.read();
             output1.write(in_pkt);
             output2.write(in_pkt);
         }
     }
 
+    return;
+}
+
+template <int N, int MAX_ELEMS>
+void combine_streams(bbox_stream_t (&streams)[N], bbox_stream_t& output) {
+    // Keep track of which last values were seen for each stream
+    ap_uint<1> last_seen[N] = {0};
+    ap_uint<1> last_count = 0;
+
+    combine_packet: for (int i = 0; i < MAX_ELEMS && last_count < N; i++) {
+        combine_streams: for (int j = 0; j < N; j++) {
+        #pragma HLS UNROLL
+
+            if (!last_seen[j]) {
+                const bbox_axis_t& in_pkt = streams[i].read();
+                output.write(in_pkt);
+                last_seen[j] = in_pkt.tlast;
+                last_count += 1;
+            }
+        }
+    }
+
+    // Terminate the output stream with the terminator
+    coord_t term_coord = -1;
+    bbox_t terminator = bbox_t(term_coord, term_coord, term_coord, term_coord);
+    output.write(bbox_axis_t(terminator, 1));
     return;
 }
 
@@ -80,63 +154,91 @@ static void downscale_image(grayscale_stream_t& image,
     return;
 }
 
-template <int IMAGE_WIDTH, int IMAGE_HEIGHT>
+template <int IMAGE_WIDTH, int IMAGE_HEIGHT, int SCALE>
+static void blob_bounding_boxes(blob_detection_stream_t& blob_mask,
+        bbox_stream_t& blobs) {
+#pragma HLS INLINE
+
+    bbox_cy_loop: for (coord_t cy = 0; cy < IMAGE_HEIGHT; cy++) {
+        bbox_cx_loop: for (coord_t cx = 0; cx < IMAGE_WIDTH; cx++) {
+        #pragma HLS PIPELINE II=1
+
+            ap_int<1> detection = blob_mask.read().tdata;
+            if (detection) {
+                coord_t scaled_cx = SCALE * cx;
+                coord_t scaled_cy = SCALE * cy;
+                coord_t radius = SCALE * (BLOB_FILTER_WIDTH + 1) / 2;
+                bbox_t bbox = bbox_t(scaled_cx, scaled_cy, radius);
+                bbox_axis_t bbox_pkt = bbox_axis_t(bbox, 0);
+                blobs.write(bbox_pkt);
+            }
+            if (cy == IMAGE_HEIGHT - 1 && cx == IMAGE_WIDTH - 1) {
+                // Write the -1 terminator to the output stream
+                coord_t term_coord = -1;
+                bbox_t terminator = bbox_t(term_coord, term_coord, term_coord, term_coord);
+                blobs.write(bbox_axis_t(terminator, 1));
+            }
+        }
+    }
+
+    return;
+}
+
+template <int IMAGE_WIDTH, int IMAGE_HEIGHT, int SCALE>
 static void single_scale_blob_detector(grayscale_stream_t& image,
-        blob_detection_stream_t& blob_mask) {
+        bbox_stream_t& blobs) {
 #pragma HLS INLINE
 
     // Convert the image to monochrome, and perform blob detection
     monochrome_stream_t mono_image;
+    blob_detection_stream_t blob_mask;
     monochrome(image, mono_image);
     blob_detection<IMAGE_WIDTH, IMAGE_HEIGHT>(mono_image, blob_mask);
+
+    // Convert the blob detections into a stream of bounding boxes
+    blob_bounding_boxes<IMAGE_WIDTH, IMAGE_HEIGHT, SCALE>(blob_mask, blobs);
     return;
 }
 
-void blob_detector(pixel_stream_t& rgba_image,
-        blob_detection_stream_t& blob_mask0,
-        blob_detection_stream_t& blob_mask1,
-        blob_detection_stream_t& blob_mask2,
-        blob_detection_stream_t& blob_mask3,
-        blob_detection_stream_t& blob_mask4) {
+void blob_detector(pixel_stream_t& rgba_image, bbox_stream_t& blobs) {
 #pragma HLS INTERFACE axis port=rgba_image
-#pragma HLS INTERFACE axis port=blob_mask0
-#pragma HLS INTERFACE axis port=blob_mask1
-#pragma HLS INTERFACE axis port=blob_mask2
-#pragma HLS INTERFACE axis port=blob_mask3
-#pragma HLS INTERFACE axis port=blob_mask4
+#pragma HLS INTERFACE axis port=blobs
 #pragma HLS INTERFACE ap_ctrl_none port=return
 
 #pragma HLS DATAFLOW
 
     // Convert the image to grayscale, and duplicate the stream
-    grayscale_stream_t gray_image, gray_image1, gray_image2;
+    grayscale_stream_t gray_image, images1[NUM_SCALES], images2[NUM_SCALES-1];
+    #pragma HLS ARRAY_PARTITION complete variable=images1
+    #pragma HLS ARRAY_PARTITION complete variable=images2
     grayscale(rgba_image, gray_image);
     duplicate_stream<grayscale_axis_t, IMAGE_WIDTH, IMAGE_HEIGHT>(gray_image,
-            gray_image1, gray_image2);
+            images1[0], images2[0]);
 
     // Downscale the image for all 5 scale levels, producing duplicate streams
-    grayscale_stream_t level1_image1, level1_image2, level2_image1;
-    grayscale_stream_t level2_image2, level3_image1, level3_image2;
-    grayscale_stream_t level4_image;
-    downscale_image<IMAGE_WIDTH, IMAGE_HEIGHT>(gray_image2, level1_image1,
-            level1_image2);
-    downscale_image<IMAGE_WIDTH1, IMAGE_HEIGHT1>(level1_image2, level2_image1,
-            level2_image2);
-    downscale_image<IMAGE_WIDTH2, IMAGE_HEIGHT2>(level2_image2, level3_image1,
-            level3_image2);
-    downscale<IMAGE_WIDTH3, IMAGE_HEIGHT3>(level3_image2, level4_image);
+    downscale_image<IMAGE_WIDTH0, IMAGE_HEIGHT0>(images2[0], images1[1],
+            images2[1]);
+    downscale_image<IMAGE_WIDTH1, IMAGE_HEIGHT1>(images2[1], images1[2],
+            images2[2]);
+    downscale_image<IMAGE_WIDTH2, IMAGE_HEIGHT2>(images2[2], images1[3],
+            images2[3]);
+    downscale<IMAGE_WIDTH3, IMAGE_HEIGHT3>(images2[3], images1[4]);
 
     // Run blob detection on each of the 5 scale levels
-    single_scale_blob_detector<IMAGE_WIDTH, IMAGE_HEIGHT>(gray_image1,
-            blob_mask0);
-    single_scale_blob_detector<IMAGE_WIDTH1, IMAGE_HEIGHT1>(level1_image1,
-            blob_mask1);
-    single_scale_blob_detector<IMAGE_WIDTH2, IMAGE_HEIGHT2>(level2_image1,
-            blob_mask2);
-    single_scale_blob_detector<IMAGE_WIDTH3, IMAGE_HEIGHT3>(level3_image1,
-            blob_mask3);
-    single_scale_blob_detector<IMAGE_WIDTH4, IMAGE_HEIGHT4>(level4_image,
-            blob_mask4);
+    bbox_stream_t scale_blobs[NUM_SCALES];
+    #pragma HLS ARRAY_PARTITION complete variable=scale_blobs
+    single_scale_blob_detector<IMAGE_WIDTH0, IMAGE_HEIGHT0, SCALE0>(images1[0],
+            scale_blobs[0]);
+    single_scale_blob_detector<IMAGE_WIDTH1, IMAGE_HEIGHT1, SCALE1>(images1[1],
+            scale_blobs[1]);
+    single_scale_blob_detector<IMAGE_WIDTH2, IMAGE_HEIGHT2, SCALE2>(images1[2],
+            scale_blobs[2]);
+    single_scale_blob_detector<IMAGE_WIDTH3,IMAGE_HEIGHT3, SCALE3>(images1[3],
+            scale_blobs[3]);
+    single_scale_blob_detector<IMAGE_WIDTH4, IMAGE_HEIGHT4, SCALE4>(images1[4],
+            scale_blobs[4]);
 
+    // Combine the 5 streams of blob bounding boxes into a single stream
+    combine_streams<NUM_SCALES, MAX_BBOXES>(scale_blobs, blobs);
     return;
 }

@@ -72,19 +72,18 @@ void downscale(grayscale_stream_t& grayscale_stream, grayscale_stream_t& downsca
     // Add in fractional support
     // Read in all pixels at once
     grayscale_t grayscale_buffer[DOWNSCALE_FACTOR-1][IMAGE_WIDTH];
-#pragma HLS ARRAY_PARTITION variable=grayscale_buffer complete dim=1
-
+    #pragma HLS ARRAY_PARTITION block dim=1 factor=DOWNSCALE_FACTOR-1 variable=grayscale_buffer
 
     grayscale_axis_t downscale_stream_pkt;
     int b = 0;
-    for(int i = 0; i < IMAGE_HEIGHT; i++){
+    downscale_row_loop: for(int i = 0; i < IMAGE_HEIGHT; i++){
         grayscale_t block[DOWNSCALE_FACTOR][DOWNSCALE_FACTOR];
-#pragma HLS ARRAY_PARTITION variable=block complete dim=1
+        #pragma HLS ARRAY_PARTITION variable=block complete dim=1
         int c = 0;
-        for(int j = 0; j < IMAGE_WIDTH; j++){
+        downscale_col_loop: for(int j = 0; j < IMAGE_WIDTH; j++){
             // buffer the value until the last row of a block height
             // iterate through grayscale_buffer
-#pragma HLS PIPELINE II=1
+        #pragma HLS PIPELINE II=1
 
             if( b < (DOWNSCALE_FACTOR-1)){
                 grayscale_buffer[b][j] = grayscale_stream.read().tdata;
@@ -92,8 +91,8 @@ void downscale(grayscale_stream_t& grayscale_stream, grayscale_stream_t& downsca
             else{
                     block[b][c]= grayscale_stream.read().tdata;
                     if ( c == DOWNSCALE_FACTOR-1){
-                        for(int p = 0; p <  (DOWNSCALE_FACTOR - 1); p++){
-                            for(int q = 0; q < DOWNSCALE_FACTOR; q++){
+                        window_fill_row: for(int p = 0; p <  (DOWNSCALE_FACTOR - 1); p++) {
+                            window_fill_col: for(int q = 0; q < DOWNSCALE_FACTOR; q++){
                                 block[p][q] = grayscale_buffer[p][j];
                             }
                         }

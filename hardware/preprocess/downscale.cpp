@@ -7,11 +7,6 @@
  *
  * This file contains the implementation of the downscale module.
  *
- * The grayscale module simply takes a 32-bit input stream, consisting
- * FIXME: Insert a short description here
- *
- * FIXME: Insert a longer description here
- *
  * @bug No known bugs.
  **/
 
@@ -39,8 +34,8 @@ grayscale_t compute_downscale(grayscale_window_t window) {
     // TODO: Add in fractional input support?
     ap_int<16> sum = 0;
     ap_int<8> average = 0;
-    for (int i = 0; i < DOWNSCALE_FACTOR; i++){
-        for (int j = 0; j < DOWNSCALE_FACTOR; j++){
+    downscale_row: for (int i = 0; i < DOWNSCALE_FACTOR; i++){
+        downscale_col: for (int j = 0; j < DOWNSCALE_FACTOR; j++){
             sum += window[i][j];
         }
     }

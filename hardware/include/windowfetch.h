@@ -21,10 +21,6 @@
 const int MAX_WINDOW_DIM = 14; //log2, so max 4,096 bit image
 const int MAX_KERNEL_DIM = 5; //log2, so max 31x32 kernel
 
-//const window_f sum_window;
-
-//IN_STREAM_T should be a wrapper of IN_T
-//OUT_STREAM_T should be a wrapper of OUT_T
 template <typename IN_T, typename OUT_T, size_t IN_T_BITS, size_t OUT_T_BITS,
           int IMAGE_HEIGHT, int IMAGE_WIDTH, int KERNEL_HEIGHT, int KERNEL_WIDTH,
           OUT_T (*window_f)(IN_T window[KERNEL_HEIGHT][KERNEL_WIDTH], int start_row, int start_col)>
@@ -54,7 +50,7 @@ struct window_pipeline {
         head_win = 0;
         tail_win = 0;
     }
-public:
+
     typedef axis<IN_T, IN_T_BITS> in_pkt_t;
     typedef hls::stream<in_pkt_t> in_stream_t;
 
@@ -62,77 +58,77 @@ public:
     typedef hls::stream<out_pkt_t> out_stream_t;
 
     // window operation
-    void window_op(in_stream_t& in_stream, out_stream_t& out_stream)
-    {
-#pragma HLS_INLINE
-    	in_pkt_t in_pkt;
-    	out_pkt_t out_pkt;
+    void window_op(in_stream_t& in_stream, out_stream_t& out_stream) {
+    #pragma HLS_INLINE
 
-    	int offset = KERNEL_WIDTH/2 + (IMAGE_WIDTH*(KERNEL_HEIGHT/2));
-    	int out_pointer = -offset; //Which pixel of the output image are we looking at?
-    	int row_out_pointer = 0;
+        in_pkt_t in_pkt;
+        out_pkt_t out_pkt;
 
-    	IN_T rowbuffer[KERNEL_HEIGHT][IMAGE_WIDTH];
-    	IN_T window[KERNEL_HEIGHT][KERNEL_WIDTH];
-#pragma HLS DEPENDENCE variable=rowbuffer inter RAW false
-#pragma HLS DEPENDENCE variable=window inter RAW false
-#pragma HLS ARRAY_PARTITION variable=window complete
+        int offset = KERNEL_WIDTH/2 + (IMAGE_WIDTH*(KERNEL_HEIGHT/2));
+        int out_pointer = -offset; //Which pixel of the output image are we looking at?
+        int row_out_pointer = 0;
 
-    	pixel_op: for (int in_pointer = 0; in_pointer < IMAGE_WIDTH * IMAGE_HEIGHT + offset; in_pointer++) {
-#pragma HLS PIPELINE
+        IN_T rowbuffer[KERNEL_HEIGHT][IMAGE_WIDTH];
+        IN_T window[KERNEL_HEIGHT][KERNEL_WIDTH];
+        #pragma HLS DEPENDENCE variable=rowbuffer inter RAW false
+        #pragma HLS DEPENDENCE variable=window inter RAW false
+        #pragma HLS ARRAY_PARTITION variable=window complete
 
-    		//Input Processing
-    		//Stop loading packets when we've loaded them all
-    		if (in_pointer < IMAGE_WIDTH*IMAGE_HEIGHT)
-    			in_stream >> in_pkt;
-			rowbuffer[tail_row][tail_col] = in_pkt.tdata;
+        pixel_op: for (int in_pointer = 0; in_pointer < IMAGE_WIDTH * IMAGE_HEIGHT + offset; in_pointer++) {
+        #pragma HLS PIPELINE II=1
 
-			//Window Forming:
-			//If we have loaded in KERNEL_HEIGHT-1 full rows, we can load columns into the window
-			col_to_window: if (in_pointer >= (KERNEL_HEIGHT-1)*IMAGE_WIDTH) {
-				for (int i = 0; i < KERNEL_HEIGHT; i++) {
-					window[i][tail_win] = rowbuffer[i][tail_col]; //When i == tail_col we should really be forwarding, not loading again
-				}
-			}
+            //Input Processing
+            //Stop loading packets when we've loaded them all
+            if (in_pointer < IMAGE_WIDTH*IMAGE_HEIGHT)
+                in_stream >> in_pkt;
+            rowbuffer[tail_row][tail_col] = in_pkt.tdata;
 
-			//Output Processing
-			//Only care if output is inside the out window
-			//In addition, if we're on an edge, top, bottom, left, or right, assign 0 packets
-			if (out_pointer >= 0) {
-				if (row_out_pointer < KERNEL_WIDTH/2 || //Left rows
-					row_out_pointer >= IMAGE_WIDTH - KERNEL_WIDTH/2 || //Right rows
-					out_pointer < IMAGE_WIDTH*(KERNEL_HEIGHT/2) || //Top rows
-					out_pointer >= (IMAGE_HEIGHT - KERNEL_HEIGHT/2) * IMAGE_WIDTH) { //Bottom rows
-					out_pkt.tdata = 0;
-					out_pkt.tlast = (out_pointer == IMAGE_WIDTH*IMAGE_HEIGHT-1) ? 1 : 0;
-					out_pkt.tkeep = -1;
-				}
-				else {
-					out_pkt.tdata = window_f(window, head_row, head_win);
-					out_pkt.tlast = 0;
-					out_pkt.tkeep = -1;
-				}
-				out_stream << out_pkt;
-			}
+            //Window Forming:
+            //If we have loaded in KERNEL_HEIGHT-1 full rows, we can load columns into the window
+            col_to_window: if (in_pointer >= (KERNEL_HEIGHT-1)*IMAGE_WIDTH) {
+                for (int i = 0; i < KERNEL_HEIGHT; i++) {
+                    window[i][tail_win] = rowbuffer[i][tail_col]; //When i == tail_col we should really be forwarding, not loading again
+                }
+            }
 
-
-
-			//update the rowbuffer head, tail position
-			update_tail();
-			update_head();
-
-			//update the window head and tail
-			tail_win = (tail_win + 1 == KERNEL_WIDTH) ? 0 : tail_win.to_int() + 1;
-			head_win = (tail_win == head_win) ? ((head_win + 1 == KERNEL_WIDTH) ? 0 : head_win.to_int() + 1) : head_win.to_int();
+            //Output Processing
+            //Only care if output is inside the out window
+            //In addition, if we're on an edge, top, bottom, left, or right, assign 0 packets
+            if (out_pointer >= 0) {
+                if (row_out_pointer < KERNEL_WIDTH/2 || //Left rows
+                    row_out_pointer >= IMAGE_WIDTH - KERNEL_WIDTH/2 || //Right rows
+                    out_pointer < IMAGE_WIDTH*(KERNEL_HEIGHT/2) || //Top rows
+                    out_pointer >= (IMAGE_HEIGHT - KERNEL_HEIGHT/2) * IMAGE_WIDTH) { //Bottom rows
+                    out_pkt.tdata = 0;
+                    out_pkt.tlast = (out_pointer == IMAGE_WIDTH*IMAGE_HEIGHT-1) ? 1 : 0;
+                    out_pkt.tkeep = -1;
+                }
+                else {
+                    out_pkt.tdata = window_f(window, head_row, head_win);
+                    out_pkt.tlast = 0;
+                    out_pkt.tkeep = -1;
+                }
+                out_stream << out_pkt;
+            }
 
 
-			//update the in and out
-			if (out_pointer >= 0) {
-				row_out_pointer = (row_out_pointer + 1 == IMAGE_WIDTH) ? 0 : row_out_pointer + 1;
-			}
-			out_pointer = out_pointer + 1;
 
-    	}
+            //update the rowbuffer head, tail position
+            update_tail();
+            update_head();
+
+            //update the window head and tail
+            tail_win = (tail_win + 1 == KERNEL_WIDTH) ? 0 : tail_win.to_int() + 1;
+            head_win = (tail_win == head_win) ? ((head_win + 1 == KERNEL_WIDTH) ? 0 : head_win.to_int() + 1) : head_win.to_int();
+
+
+            //update the in and out
+            if (out_pointer >= 0) {
+                row_out_pointer = (row_out_pointer + 1 == IMAGE_WIDTH) ? 0 : row_out_pointer + 1;
+            }
+            out_pointer = out_pointer + 1;
+
+        }
      }
 
 
