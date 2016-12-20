@@ -22,8 +22,9 @@
 !Makefile
 !*.mk
 
-# Allow for Latex files
+# Allow for Latex files and powerpoints
 !*.tex
+!*.pptx
 
 # Allow for gitignore files
 !.gitignore
